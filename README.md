@@ -1,4 +1,4 @@
-# 查看该项目的最新版本请移至[github.com/teamssix/tig](https://github.com/teamssix/tig)
+# 查看该项目的最新版本请移至 [github.com/teamssix/tig](https://github.com/teamssix/tig)
 
 # 0x00 介绍
 
