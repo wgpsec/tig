@@ -1,3 +1,5 @@
+# 查看该项目的最新版本请移至[https://github.com/teamssix/tig](https://github.com/teamssix/tig)
+
 # 0x00 介绍
 
 tig `Threat Intelligence Gathering` 威胁情报收集，旨在提高蓝队拿到攻击 IP 后对其进行威胁情报信息收集的效率，目前已集成微步、IP 域名反查、Fofa 信息收集三个模块，现已支持对 IP 进行微步标签、地理位置、开放端口、域名反查等信息的查询。
