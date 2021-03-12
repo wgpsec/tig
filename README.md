@@ -1,6 +1,8 @@
+<h1 align="center">TIG  威胁情报收集 🪓</h1>
+
 # 0x00 介绍
 
-tig `Threat Intelligence Gathering` 威胁情报收集，旨在提高蓝队拿到攻击 IP 后对其进行威胁情报信息收集的效率，目前已集成微步、IP 域名反查、Fofa 信息收集、ICP 备案查询、IP 存活检测五个模块，现已支持以下信息的查询：
+TIG `Threat Intelligence Gathering` 威胁情报收集，旨在提高蓝队拿到攻击 IP 后对其进行威胁情报信息收集的效率，目前已集成微步、IP 域名反查、Fofa 信息收集、ICP 备案查询、IP 存活检测五个模块，现已支持以下信息的查询：
 
 * ✅ 微步标签
 * ✅ IP 域名反查
