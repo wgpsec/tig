@@ -63,17 +63,23 @@ def print_list(list):
 
 def youdao_trans(text, proxies):
     url = 'http://fanyi.youdao.com/translate?&doctype=json&type=EN2ZH_CN&i=%s' % text
-    r = requests.get(url, headers=random_useragent(), proxies=proxies)
+    if proxies == 'Null':
+        r = requests.get(url, headers=random_useragent())
+    else:
+        r = requests.get(url, headers=random_useragent(), proxies=proxies)
     try:
         text_trans = r.json()['translateResult'][0][0]['tgt'].strip('。').strip('，')
-        return text_trans.replace('城市','市').replace('中国联合通信有限公司','中国联通有限公司')
+        return text_trans.replace('城市', '市').replace('中国联合通信有限公司', '中国联通有限公司')
     except:
         return text
 
 
 def req(url, headers, proxies):
     try:
-        r = requests.get(url, headers=headers, proxies=proxies)
+        if proxies == 'Null':
+            r = requests.get(url, headers=headers)
+        else:
+            r = requests.get(url, headers=headers, proxies=proxies)
     except requests.exceptions.ConnectTimeout:
         print('[-] 连接 %s 发生超时' % url)
     except requests.exceptions.ProxyError:
@@ -286,7 +292,7 @@ def Fofa(ip, config_path):  # Fofa ip 信息查询
         search_string_byte = base64.b64encode(ip.encode('utf-8')).decode()
         url = 'https://fofa.so/api/v1/search/all?email=%s&key=%s&qbase64=%s&size=%s' % (
             Fofa_email, Fofa_api, search_string_byte, size)
-        proxies = {'http': None, 'https': None}
+        proxies = 'Null'
         r = req(url, random_useragent(), proxies)
         r_json = r.json()
         if r_json['error'] == True:
@@ -355,7 +361,7 @@ if __name__ == '__main__':
     if args.proxy:
         proxies = {'http': args.proxy, 'https': args.proxy}
     else:
-        proxies = {'http': None, 'https': None}
+        proxies = 'Null'
 
     if args.ip:
         main(args.ip, config_path, proxies)
