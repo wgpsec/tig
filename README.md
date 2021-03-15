@@ -18,6 +18,8 @@ tig `Threat Intelligence Gathering` 威胁情报收集，旨在提高蓝队拿�
 需要 python3 环境支持
 
 ```
+git clone https://github.com/wgpsec/tig.git
+cd  tig
 pip3 install -r requirements.txt
 python3 tig.py
 ```
