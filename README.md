@@ -77,5 +77,7 @@ IP_survive_enable = true
 
 # 0x03 最后
 
-如果在工具使用的过程中发现存在 bug 等问题，欢迎与我反馈，我的微信号：teamssix_com
+如果在工具使用的过程中发现存在 bug 等问题，欢迎与我反馈，我的微信号：teamssix_com，同时也欢迎关注我的个人微信公众号：TeamsSix
+
+![](https://teamssix.oss-cn-hangzhou.aliyuncs.com/TeamsSix_Subscription_Logo2.png)
 
