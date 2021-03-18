@@ -1,3 +1,2 @@
-fake_useragent
 pandas
 requests
