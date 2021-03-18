@@ -1,6 +1,6 @@
 <h1 align="center">TIG  威胁情报收集 🪓</h1>
 
-[![GitHub stars](https://img.shields.io/github/stars/wgpsec/tig)](https://github.com/wgpsec/tig)[![GitHub issues](https://img.shields.io/github/issues/wgpsec/tig)](https://github.com/wgpsec/tig/issues)[![GitHub release](https://img.shields.io/github/tag/wgpsec/tig)](https://github.com/wgpsec/tig/releases)
+[![GitHub stars](https://img.shields.io/github/stars/wgpsec/tig)](https://github.com/wgpsec/tig) [![GitHub issues](https://img.shields.io/github/issues/wgpsec/tig)](https://github.com/wgpsec/tig/issues) [![GitHub release](https://img.shields.io/github/tag/wgpsec/tig)](https://github.com/wgpsec/tig/releases)
 
 # 0x00 介绍
 
