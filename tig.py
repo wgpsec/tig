@@ -80,7 +80,7 @@ ICP_beian_enable = true
 # Whois 信息查询，调用 https://api.devopsclub.cn/api/whoisquery 的 api
 Whois_enable = true
 
-# Fofa ip 信息查询，查看 api 地址：https://fofa.so/user/users/detail（付费，普通会员每次100条，高级会员每次10000条）
+# Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
 Fofa_enable = true
 Fofa_email = ''
 Fofa_api = ''
