@@ -12,7 +12,7 @@ tig `Threat Intelligence Gathering` 威胁情报收集，旨在提高蓝队拿�
 * ✅ ICP 备案查询
 * ✅ 开放端口查询
 * ✅ Whois 信息查询
-* ✅ IP 地址位置查询
+* ✅ IP 地理位置查询
 *  ……
 
 后续将集成更多模块，如有好的建议或遇到 Bug 欢迎与我反馈，我的微信号：teamssix_com
