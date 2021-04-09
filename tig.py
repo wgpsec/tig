@@ -624,7 +624,7 @@ def main(ip, config_path, proxies):
                 i = i.split('(')[1].split(',')[0]
                 thread_list.append(i)
         time.sleep(5)
-    print('\n[!] 正在查询 %s 的情报信息-----------------------------------------------------------------------------------' % ip)
+    print('\n[!] 正在查询 %s 的情报信息--------------------------------------------' % ip)
     cfg = ConfigParser()
     cfg.read(config_path, encoding='utf-8-sig')
     ThreatBook_enable = cfg.get('Threat Intelligence', 'ThreatBook_enable')
