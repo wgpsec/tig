@@ -15,7 +15,7 @@ tig `Threat Intelligence Gathering` 威胁情报收集，旨在提高蓝队拿�
 * ✅ IP 地理位置查询
 *  ……
 
-后续将集成更多模块，如有好的建议或遇到 Bug,欢迎提 issue
+后续将集成更多模块，如有好的建议或遇到 Bug，欢迎提 issue
 
 # 0x01 安装
 
