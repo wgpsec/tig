@@ -2,7 +2,8 @@
 # _*_ coding:utf-8 _*_
 # author TeamsSix
 # blog https://www.teamssix.com
-# github https://github.com/teamssix
+# Team WgpSec
+# github https://github.com/wgpsec
 
 import os
 import sys
