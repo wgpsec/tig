@@ -84,7 +84,7 @@ Fofa_api = '{Fofa_api}'
         with open(config_path, 'w', encoding='utf-8-sig') as w:
             w.write(config_text)
     else:
-        with open(config_path) as f:
+        with open(config_path, encoding='utf-8-sig') as f:
             f = f.read()
         if 'Threat Intelligence' in f:
             console.log('检测存在历史版本配置文件，正在自动更新配置文件……')
