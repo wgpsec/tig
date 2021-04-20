@@ -1,4 +1,5 @@
 requests
 pandas
 rich
+openpyxl
  
