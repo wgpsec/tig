@@ -148,10 +148,8 @@ def ThreatBook(ip, config_path):  # 微步威胁情报查询
 
         r_json = r.json()
         if r_json['response_code'] != 0:
-            if r_json['verbose_msg'] == 'Beyond Daily Limitation':
-                console.log('[yellow][INFO] 微步 API 已超出当日使用次数')
-            else:
-                console.log('[red][EROR] 微步 API 调用失败，错误信息：%s' % r_json['verbose_msg'])
+            console.log('[red][EROR] 微步 API 调用失败，错误信息：%s' % r_json['verbose_msg'])
+            return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
         else:
             confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
             if r_json['data']['%s' % ip]['is_malicious'] == False:  # 是否为恶意 IP
