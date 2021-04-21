@@ -23,6 +23,7 @@ from configparser import ConfigParser
 console = Console()
 requests.packages.urllib3.disable_warnings()
 
+
 def random_useragent():
     ua = [
         "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
@@ -143,47 +144,51 @@ def ThreatBook(ip, config_path):  # 微步威胁情报查询
             "resource": "%s" % ip,
             "lang": "zh"
         }
-        r = requests.request("GET", url, params=query, verify=False, proxies={'http': None, 'https': None})
-
-        r_json = r.json()
-        if r_json['response_code'] != 0:
-            console.log('[red][EROR] 微步 API 调用失败，错误信息：%s' % r_json['verbose_msg'])
-            return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
-        else:
-            confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
-            if r_json['data']['%s' % ip]['is_malicious'] == False:  # 是否为恶意 IP
-                is_malicious = '否'
+        try:
+            r = requests.request("GET", url, params=query, verify=False, proxies={'http': None, 'https': None})
+            r_json = r.json()
+            if r_json['response_code'] != 0:
+                console.log('[red][EROR] 微步 API 调用失败，错误信息：%s' % r_json['verbose_msg'])
+                return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
             else:
-                is_malicious = '是'
-            severity = r_json['data']['%s' % ip]['severity']  # 危害程度
-            judgments = ",".join(r_json['data']['%s' % ip]['judgments'])  # 威胁类型
-            tags_classes = r_json['data']['%s' % ip]['tags_classes']  # 标签类别
-            tags = []  # 标签
-            tags_type = []  # 标签类型
-            for i in tags_classes:
-                tags.append(",".join(i['tags']))
-                tags_type.append(i['tags_type'])
-            tags = ','.join(tags)
-            tags_type = ','.join(tags_type)
-            scene = r_json['data']['%s' % ip]['scene']  # 场景
-            carrier = r_json['data']['%s' % ip]['basic']['carrier']  # IP 基本信息
-            location = r_json['data']['%s' % ip]['basic']['location']
-            ip_location = location['country'] + ' ' + location['province'] + ' ' + location['city']  # IP 地理位置
-            table = Table()
-            table.add_column('是否为恶意IP', justify="center")
-            table.add_column('危害程度', justify="center")
-            table.add_column('威胁类型', justify="center")
-            table.add_column('标签', justify="center")
-            table.add_column('标签类型', justify="center")
-            table.add_column('场景', justify="center")
-            table.add_column('IP基本信息', justify="center")
-            table.add_column('IP地理位置', justify="center")
-            table.add_column('情报可信度', justify="center")
-            table.add_row(is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location,
-                          confidence_level)
-            console.log('[green][SUCC] %s 微步威胁情报信息：' % ip)
-            console.print(table)
-            return (is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location, confidence_level)
+                confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
+                if r_json['data']['%s' % ip]['is_malicious'] == False:  # 是否为恶意 IP
+                    is_malicious = '否'
+                else:
+                    is_malicious = '是'
+                severity = r_json['data']['%s' % ip]['severity']  # 危害程度
+                judgments = ",".join(r_json['data']['%s' % ip]['judgments'])  # 威胁类型
+                tags_classes = r_json['data']['%s' % ip]['tags_classes']  # 标签类别
+                tags = []  # 标签
+                tags_type = []  # 标签类型
+                for i in tags_classes:
+                    tags.append(",".join(i['tags']))
+                    tags_type.append(i['tags_type'])
+                tags = ','.join(tags)
+                tags_type = ','.join(tags_type)
+                scene = r_json['data']['%s' % ip]['scene']  # 场景
+                carrier = r_json['data']['%s' % ip]['basic']['carrier']  # IP 基本信息
+                location = r_json['data']['%s' % ip]['basic']['location']
+                ip_location = location['country'] + ' ' + location['province'] + ' ' + location['city']  # IP 地理位置
+                table = Table()
+                table.add_column('是否为恶意IP', justify="center")
+                table.add_column('危害程度', justify="center")
+                table.add_column('威胁类型', justify="center")
+                table.add_column('标签', justify="center")
+                table.add_column('标签类型', justify="center")
+                table.add_column('场景', justify="center")
+                table.add_column('IP基本信息', justify="center")
+                table.add_column('IP地理位置', justify="center")
+                table.add_column('情报可信度', justify="center")
+                table.add_row(is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location,
+                              confidence_level)
+                console.log('[green][SUCC] %s 微步威胁情报信息：' % ip)
+                console.print(table)
+                return (
+                    is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location, confidence_level)
+        except Exception as e:
+            console.log('[red][EROR] 查询 %s 的微步信息发生错误，错误信息：%s' % (ip, repr(e)))
+            return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
 
 
 def IP_survive(ip):
@@ -261,31 +266,36 @@ def Fofa(ip, config_path):  # Fofa ip 信息查询
         url = 'https://fofa.so/api/v1/search/all?email=%s&key=%s&qbase64=%s&size=%s' % (
             Fofa_email, Fofa_api, search_string_byte, size)
         proxies = {'http': None, 'https': None}
-        r = req(url, random_useragent(), proxies)
-        r_json = r.json()
-        if r_json['error'] == True:
-            if r_json['errmsg'] == '401 Unauthorized, make sure 1.email and apikey is correct 2.FOFA coin is enough.':
-                console.log('[red][EROR] Fofa API 调用失败，错误原因有：1、Fofa 邮箱或 API 填写错误\t2、F币余额不足')
-            else:
-                console.log('[red][EROR] Fofa 获取数据发生错误，错误信息：%s' % r_json['errmsg'])
-            return (IP_survive_bool, 0, 0)
-        elif len(r_json['results']) > 0:
+        try:
+            r = req(url, random_useragent(), proxies)
+            r_json = r.json()
+            if r_json['error'] == True:
+                if r_json[
+                    'errmsg'] == '401 Unauthorized, make sure 1.email and apikey is correct 2.FOFA coin is enough.':
+                    console.log('[red][EROR] Fofa API 调用失败，错误原因有：1、Fofa 邮箱或 API 填写错误\t2、F币余额不足')
+                else:
+                    console.log('[red][EROR] Fofa 获取数据发生错误，错误信息：%s' % r_json['errmsg'])
+                return (IP_survive_bool, 0, 0)
+            elif len(r_json['results']) > 0:
 
-            ip_port = []  # 获得 fofa 查询结果中的开放端口信息
-            for i in r_json['results']:
-                ip_port.append(i[2])
-            ip_port = list(set(ip_port))
-            ip_port.sort(key=int)
-            fofa_port = ",".join(ip_port)
-            fofa_url_result = []  # 获得 fofa 查询结果中的域名信息
-            for i in r_json['results']:
-                if ip not in i[0]:
-                    if 'http://' not in i[0] and 'https://' not in i[0]:
-                        fofa_url_result.append(i[0].split(':')[0])
-                    else:
-                        fofa_url_result.append(i[0].split('://')[1].split(':')[0] + '\n')
-            return (IP_survive_bool, fofa_port, fofa_url_result)
-        else:
+                ip_port = []  # 获得 fofa 查询结果中的开放端口信息
+                for i in r_json['results']:
+                    ip_port.append(i[2])
+                ip_port = list(set(ip_port))
+                ip_port.sort(key=int)
+                fofa_port = ",".join(ip_port)
+                fofa_url_result = []  # 获得 fofa 查询结果中的域名信息
+                for i in r_json['results']:
+                    if ip not in i[0]:
+                        if 'http://' not in i[0] and 'https://' not in i[0]:
+                            fofa_url_result.append(i[0].split(':')[0])
+                        else:
+                            fofa_url_result.append(i[0].split('://')[1].split(':')[0] + '\n')
+                return (IP_survive_bool, fofa_port, fofa_url_result)
+            else:
+                return (IP_survive_bool, 0, 0)
+        except Exception as e:
+            console.log('[red][EROR] 查询 %s 的 Fofa 信息发生错误，错误信息：%s' % (ip, repr(e)))
             return (IP_survive_bool, 0, 0)
 
 
@@ -355,7 +365,7 @@ def main(ip, config_path, proxies):
                         result['备案名称'] = 'N/A'
                         result['备案号'] = 'N/A'
             except Exception as e:
-                console.log('[red][EROR] 访问 %s 发送错误，错误信息：%s' % (url_icp, repr(e)))
+                console.log('[red][EROR] 查询 %s 的备案信息发生错误，错误信息：%s' % (i.strip(), repr(e)))
                 result['域名'] = i.strip()
                 result['标题'] = 'N/A'
                 result['备案类型'] = 'N/A'
@@ -421,7 +431,7 @@ def main(ip, config_path, proxies):
                         result['注册时间'] = 'N/A'
                         result['到期时间'] = 'N/A'
             except Exception as e:
-                console.log('[red][EROR] 访问 %s 发送错误，错误信息：%s' % (url_icp, repr(e)))
+                console.log('[red][EROR] 查询 %s 的 Whois 信息发生错误，错误信息：%s' % (i.strip(), repr(e)))
                 result['注册人'] = 'N/A'
                 result['注册邮箱'] = 'N/A'
                 result['注册商'] = 'N/A'
