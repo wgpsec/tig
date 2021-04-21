@@ -506,7 +506,7 @@ if __name__ == '__main__':
     pools = []
     if args.ip:
         ip = args.ip
-        console.rule("[yellow]正在查询 %s 的情报信息" % ip, align='left', style="yellow")
+        console.rule("[yellow]正在查询 %s 的情报信息" % ip, style="yellow")
         main(ip, config_path, proxies)
     elif args.file:
         with open(args.file) as f:
@@ -520,7 +520,7 @@ if __name__ == '__main__':
         ip_len = len(ip_list)
         for i in ip_list:
             num = num + 1
-            console.rule("[yellow]正在查询 %s 的情报信息，剩余 %s 个IP" % (i, ip_len - num), align='left', style="yellow")
+            console.rule("[yellow]正在查询 %s 的情报信息，剩余 %s 个IP" % (i, ip_len - num), style="yellow")
             main(i, config_path, proxies)
             print()
     else:
