@@ -147,39 +147,46 @@ def ThreatBook(ip, config_path):  # 微步威胁情报查询
         r = requests.request("GET", url, params=query, verify=False, proxies={'http': None, 'https': None})
 
         r_json = r.json()
-        confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
-        if r_json['data']['%s' % ip]['is_malicious'] == False:  # 是否为恶意 IP
-            is_malicious = '否'
+        if r_json['response_code'] != 0:
+            if r_json['verbose_msg'] == 'Beyond Daily Limitation':
+                console.log('[yellow][INFO] 微步 API 已超出当日使用次数')
+            else:
+                console.log('[red][EROR] 微步 API 调用失败，错误信息：%s' % r_json['verbose_msg'])
         else:
-            is_malicious = '是'
-        severity = r_json['data']['%s' % ip]['severity']  # 危害程度
-        judgments = ",".join(r_json['data']['%s' % ip]['judgments'])  # 威胁类型
-        tags_classes = r_json['data']['%s' % ip]['tags_classes']  # 标签类别
-        tags = []  # 标签
-        tags_type = []  # 标签类型
-        for i in tags_classes:
-            tags.append(",".join(i['tags']))
-            tags_type.append(i['tags_type'])
-        tags = ','.join(tags)
-        tags_type = ','.join(tags_type)
-        scene = r_json['data']['%s' % ip]['scene']  # 场景
-        carrier = r_json['data']['%s' % ip]['basic']['carrier']  # IP 基本信息
-        location = r_json['data']['%s' % ip]['basic']['location']
-        ip_location = location['country'] + ' ' + location['province'] + ' ' + location['city']  # IP 地理位置
-        table = Table()
-        table.add_column('是否为恶意IP', justify="center")
-        table.add_column('危害程度', justify="center")
-        table.add_column('威胁类型', justify="center")
-        table.add_column('标签', justify="center")
-        table.add_column('标签类型', justify="center")
-        table.add_column('场景', justify="center")
-        table.add_column('IP基本信息', justify="center")
-        table.add_column('IP地理位置', justify="center")
-        table.add_column('情报可信度', justify="center")
-        table.add_row(is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location, confidence_level)
-        console.log('[green][SUCC] %s 微步威胁情报信息：' % ip)
-        console.print(table)
-        return (is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location, confidence_level)
+            confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
+            if r_json['data']['%s' % ip]['is_malicious'] == False:  # 是否为恶意 IP
+                is_malicious = '否'
+            else:
+                is_malicious = '是'
+            severity = r_json['data']['%s' % ip]['severity']  # 危害程度
+            judgments = ",".join(r_json['data']['%s' % ip]['judgments'])  # 威胁类型
+            tags_classes = r_json['data']['%s' % ip]['tags_classes']  # 标签类别
+            tags = []  # 标签
+            tags_type = []  # 标签类型
+            for i in tags_classes:
+                tags.append(",".join(i['tags']))
+                tags_type.append(i['tags_type'])
+            tags = ','.join(tags)
+            tags_type = ','.join(tags_type)
+            scene = r_json['data']['%s' % ip]['scene']  # 场景
+            carrier = r_json['data']['%s' % ip]['basic']['carrier']  # IP 基本信息
+            location = r_json['data']['%s' % ip]['basic']['location']
+            ip_location = location['country'] + ' ' + location['province'] + ' ' + location['city']  # IP 地理位置
+            table = Table()
+            table.add_column('是否为恶意IP', justify="center")
+            table.add_column('危害程度', justify="center")
+            table.add_column('威胁类型', justify="center")
+            table.add_column('标签', justify="center")
+            table.add_column('标签类型', justify="center")
+            table.add_column('场景', justify="center")
+            table.add_column('IP基本信息', justify="center")
+            table.add_column('IP地理位置', justify="center")
+            table.add_column('情报可信度', justify="center")
+            table.add_row(is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location,
+                          confidence_level)
+            console.log('[green][SUCC] %s 微步威胁情报信息：' % ip)
+            console.print(table)
+            return (is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location, confidence_level)
 
 
 def IP_survive(ip):
