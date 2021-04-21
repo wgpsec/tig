@@ -5,7 +5,7 @@
 # Author : TeamsSix
 # Author blog : https://www.teamssix.com
 
- 
+
 import os
 import sys
 import time
@@ -21,6 +21,7 @@ from rich.console import Console
 from configparser import ConfigParser
 
 console = Console()
+requests.packages.urllib3.disable_warnings()
 
 
 def random_useragent():
@@ -114,7 +115,7 @@ Fofa_api = '{Fofa_api}'
 
 def req(url, headers, proxies):
     try:
-        r = requests.get(url, headers=headers, proxies=proxies, timeout=5)
+        r = requests.get(url, headers=headers, proxies=proxies, timeout=5, verify=False)
         return r
     except requests.exceptions.ConnectTimeout:
         if 'api.hackertarget.com' not in url:
@@ -143,7 +144,7 @@ def ThreatBook(ip, config_path):  # 微步威胁情报查询
             "resource": "%s" % ip,
             "lang": "zh"
         }
-        r = requests.request("GET", url, params=query)
+        r = requests.request("GET", url, params=query, verify=False, proxies={'http': None, 'https': None})
 
         r_json = r.json()
         confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
@@ -215,7 +216,7 @@ def IP_reverse1(ip, proxies):
 def IP_reverse2(ip, proxies):
     url = 'http://api.webscan.cc/?action=query&ip=%s' % ip
     try:
-        r = requests.get(url, headers=random_useragent(), proxies=proxies, timeout=5)
+        r = requests.get(url, headers=random_useragent(), proxies=proxies, timeout=5, verify=False)
     except:
         return 0
     if 'Error' != r:
@@ -468,7 +469,7 @@ if __name__ == '__main__':
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
 |T|h|r|e|a|t| |I|n|t|e|l|l|i|g|e|n|c|e| |G|a|t|h|e|r|i|n|g|
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
-    团队：狼组安全团队   作者：TeamsSix    版本：0.5       
+    团队：狼组安全团队   作者：TeamsSix    版本：0.5.1       
     ''')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', dest='config', help='指定配置文件，默认 ./config.ini')
