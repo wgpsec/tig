@@ -70,7 +70,7 @@ python3 tig.py
 ```
 git clone https://gitee.com/wgpsec/tig.git
 cd tig
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 python3 tig.py
 ```
 
