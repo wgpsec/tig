@@ -338,68 +338,82 @@ def main(ip, config_path, proxies):
             result['情报可信度'] = ThreatBook_result[8]
             result['IP是否存活'] = IP_survive_bool
             result['IP 可能开放端口'] = fofa_port
+            try:
+                url_icp = 'https://api.vvhan.com/api/icp?url=%s' % i
+                r_icp = req(url_icp, random_useragent(), proxies)
+                if 'Error' != r_icp:
+                    r_icp_json = r_icp.json()
+                    if 'message' not in r_icp_json:  # 存在备案信息
+                        result['域名'] = i.strip()
+                        result['标题'] = r_icp_json['info']['title'].strip()
+                        result['备案类型'] = r_icp_json['info']['nature'].strip()
+                        result['备案名称'] = r_icp_json['info']['name'].strip()
+                        result['备案号'] = r_icp_json['info']['icp'].strip()
+                    else:  # 不存在备案信息
+                        result['域名'] = i.strip()
+                        result['标题'] = 'N/A'
+                        result['备案类型'] = 'N/A'
+                        result['备案名称'] = 'N/A'
+                        result['备案号'] = 'N/A'
+            except Exception as e:
+                console.log('[red][EROR] 访问 %s 发送错误，错误信息：%s' % (url_icp, repr(e)))
+                result['域名'] = i.strip()
+                result['标题'] = 'N/A'
+                result['备案类型'] = 'N/A'
+                result['备案名称'] = 'N/A'
+                result['备案号'] = 'N/A'
 
-            url_icp = 'https://api.vvhan.com/api/icp?url=%s' % i
-            r_icp = req(url_icp, random_useragent(), proxies)
-            if 'Error' != r_icp:
-                r_icp_json = r_icp.json()
-                if 'message' not in r_icp_json:  # 存在备案信息
-                    result['域名'] = i.strip()
-                    result['标题'] = r_icp_json['info']['title'].strip()
-                    result['备案类型'] = r_icp_json['info']['nature'].strip()
-                    result['备案名称'] = r_icp_json['info']['name'].strip()
-                    result['备案号'] = r_icp_json['info']['icp'].strip()
-                else:  # 不存在备案信息
-                    result['域名'] = i.strip()
-                    result['标题'] = 'N/A'
-                    result['备案类型'] = 'N/A'
-                    result['备案名称'] = 'N/A'
-                    result['备案号'] = 'N/A'
+            try:
+                url_whois = 'https://api.devopsclub.cn/api/whoisquery?domain=%s&type=json' % i
+                r_whois = req(url_whois, random_useragent(), proxies)
+                if 'Error' != r_whois:
+                    r_whois_json = r_whois.json()
+                    r_whois_text = r_whois.text
+                    if r_whois.status_code == 200:
+                        if r_whois_json['msg'] != 'query fail':
+                            if 'registrar' in r_whois_text:
+                                result['注册人'] = r_whois_json['data']['data']['registrar']
+                            elif 'registrant' in r_whois_text:
+                                result['注册人'] = r_whois_json['data']['data']['registrant']
+                            else:
+                                result['注册人'] = 'N/A'
 
-            url_whois = 'https://api.devopsclub.cn/api/whoisquery?domain=%s&type=json' % i
-            r_whois = req(url_whois, random_useragent(), proxies)
-            if 'Error' != r_whois:
-                r_whois_json = r_whois.json()
-                r_whois_text = r_whois.text
-                if r_whois.status_code == 200:
-                    if r_whois_json['msg'] != 'query fail':
-                        if 'registrar' in r_whois_text:
-                            result['注册人'] = r_whois_json['data']['data']['registrar']
-                        elif 'registrant' in r_whois_text:
-                            result['注册人'] = r_whois_json['data']['data']['registrant']
+                            if 'registrarAbuseContactEmail' in r_whois_text:
+                                result['注册邮箱'] = r_whois_json['data']['data']['registrarAbuseContactEmail']
+                            elif 'registrantContactEmail' in r_whois_text:
+                                result['注册邮箱'] = r_whois_json['data']['data']['registrantContactEmail']
+                            else:
+                                result['注册邮箱'] = 'N/A'
+
+                            if 'registrarWHOISServer' in r_whois_text:
+                                result['注册商'] = r_whois_json['data']['data']['registrarWHOISServer']
+                            elif 'sponsoringRegistrar' in r_whois_text:
+                                result['注册商'] = r_whois_json['data']['data']['sponsoringRegistrar']
+                            else:
+                                result['注册商'] = 'N/A'
+
+                            if 'creationDate' in r_whois_text:
+                                result['注册时间'] = \
+                                    r_whois_json['data']['data']['creationDate'].split('T')[0]
+                            elif 'registrationTime' in r_whois_text:
+                                result['注册时间'] = \
+                                    r_whois_json['data']['data']['registrationTime'].split(' ')[0]
+                            else:
+                                result['注册时间'] = 'N/A'
+
+                            if 'registryExpiryDate' in r_whois_text:
+                                result['到期时间'] = \
+                                    r_whois_json['data']['data']['registryExpiryDate'].split('T')[0]
+                            elif 'expirationTime' in r_whois_text:
+                                result['到期时间'] = \
+                                    r_whois_json['data']['data']['expirationTime'].split(' ')[0]
+                            else:
+                                result['到期时间'] = 'N/A'
                         else:
                             result['注册人'] = 'N/A'
-
-                        if 'registrarAbuseContactEmail' in r_whois_text:
-                            result['注册邮箱'] = r_whois_json['data']['data']['registrarAbuseContactEmail']
-                        elif 'registrantContactEmail' in r_whois_text:
-                            result['注册邮箱'] = r_whois_json['data']['data']['registrantContactEmail']
-                        else:
                             result['注册邮箱'] = 'N/A'
-
-                        if 'registrarWHOISServer' in r_whois_text:
-                            result['注册商'] = r_whois_json['data']['data']['registrarWHOISServer']
-                        elif 'sponsoringRegistrar' in r_whois_text:
-                            result['注册商'] = r_whois_json['data']['data']['sponsoringRegistrar']
-                        else:
                             result['注册商'] = 'N/A'
-
-                        if 'creationDate' in r_whois_text:
-                            result['注册时间'] = \
-                                r_whois_json['data']['data']['creationDate'].split('T')[0]
-                        elif 'registrationTime' in r_whois_text:
-                            result['注册时间'] = \
-                                r_whois_json['data']['data']['registrationTime'].split(' ')[0]
-                        else:
                             result['注册时间'] = 'N/A'
-
-                        if 'registryExpiryDate' in r_whois_text:
-                            result['到期时间'] = \
-                                r_whois_json['data']['data']['registryExpiryDate'].split('T')[0]
-                        elif 'expirationTime' in r_whois_text:
-                            result['到期时间'] = \
-                                r_whois_json['data']['data']['expirationTime'].split(' ')[0]
-                        else:
                             result['到期时间'] = 'N/A'
                     else:
                         result['注册人'] = 'N/A'
@@ -407,13 +421,13 @@ def main(ip, config_path, proxies):
                         result['注册商'] = 'N/A'
                         result['注册时间'] = 'N/A'
                         result['到期时间'] = 'N/A'
-                else:
-                    result['注册人'] = 'N/A'
-                    result['注册邮箱'] = 'N/A'
-                    result['注册商'] = 'N/A'
-                    result['注册时间'] = 'N/A'
-                    result['到期时间'] = 'N/A'
-
+            except Exception as e:
+                console.log('[red][EROR] 访问 %s 发送错误，错误信息：%s' % (url_icp, repr(e)))
+                result['注册人'] = 'N/A'
+                result['注册邮箱'] = 'N/A'
+                result['注册商'] = 'N/A'
+                result['注册时间'] = 'N/A'
+                result['到期时间'] = 'N/A'
             pools.append(result)
             pools_single.append(result)
 
@@ -474,7 +488,7 @@ if __name__ == '__main__':
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
 |T|h|r|e|a|t| |I|n|t|e|l|l|i|g|e|n|c|e| |G|a|t|h|e|r|i|n|g|
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
-    团队：狼组安全团队   作者：TeamsSix    版本：0.5.1       
+    团队：狼组安全团队   作者：TeamsSix    版本：0.5.2       
     ''')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', dest='config', help='指定配置文件，默认 ./config.ini')
