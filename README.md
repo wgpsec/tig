@@ -32,7 +32,7 @@ TIG `Threat Intelligence Gathering` ，即威胁情报收集。
 
 **国外：[https://github.com/wgpsec/tig](https://github.com/wgpsec/tig)**
 
-**国外：[https://gitee.com/wgpsec/tig](https://gitee.com/wgpsec/tig)**
+**国内：[https://gitee.com/wgpsec/tig](https://gitee.com/wgpsec/tig)**
 
 
 
