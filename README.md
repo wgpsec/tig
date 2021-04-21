@@ -54,7 +54,7 @@ TIG `Threat Intelligence Gathering` ，即威胁情报收集。
 
 # 0x01 安装
 
-需要 python3 环境支持
+需要 python3.6 或更高版本支持
 
 **国外**
 
