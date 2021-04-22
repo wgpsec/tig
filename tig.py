@@ -73,6 +73,7 @@ def init(config_path):
         ThreatBook_api = input('请输入您的微步 Api：')
         Fofa_email = input('请输入您的Fofa邮箱：')
         Fofa_api = input('请输入您的Fofa Api：')
+        ti360_cookie = input('请输入360威胁情报中心cookie ti_portal：')
         config_text = '''[Api Config]
 
 # 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/nodev4/vb4/myAPI（每天 50 次的免费额度）
@@ -81,7 +82,9 @@ ThreatBook_api = '{ThreatBook_api}'
 # Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
 Fofa_email = '{Fofa_email}'
 Fofa_api = '{Fofa_api}'
-'''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api)
+# 360威胁情报中心Cookie （暂无API支持）
+ti360_cookie = '{ti360_cookie}'
+'''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api, ti360_cookie=ti360_cookie)
         with open(config_path, 'w', encoding='utf-8-sig') as w:
             w.write(config_text)
     else:
@@ -299,8 +302,49 @@ def Fofa(ip, config_path):  # Fofa ip 信息查询
             return (IP_survive_bool, 0, 0)
 
 
+# 360TI TEST version
+s = requests.Session()
+
+
+def init_360ti(config_path):
+    cfg = ConfigParser()
+    cfg.read(config_path, encoding='utf-8-sig')
+    ti_portal = cfg.get('Api Config', 'ti360_cookie').strip("'").strip()
+    s.cookies.set("ti_portal", ti_portal)
+
+
+def req_360ti(info_type, query):
+    url = "https://ti.360.cn/ti/{}?query={}".format(info_type, query)
+    r = s.get(url, headers=random_useragent(), timeout=5, verify=False)
+    s.cookies.update(r.cookies)
+    return r.json()["data"]
+
+
+def ti360(ip):  # 360威胁情报查询
+    ti360_infos = {}
+    query_dict = ["ip_info", "ip_whois", "ip_rdns"]
+    ky_dict=['ip_info',"ip_whois"]
+    for t in query_dict:
+        tmp = req_360ti(t, ip)
+        if tmp is not None:
+            ti360_infos[t] = tmp
+    for t in ti360_infos:
+        print("====={}====".format(t))
+        for s, v in ti360_infos[t].items():
+            if t in ky_dict:
+                print(v['key'], ":", v['value'])
+            elif t =="ip_rdns":
+                for ip_rdns_tiem in v['value']:
+                    print(ip_rdns_tiem)
+            else:
+                print(v)
+# === 360 TEST END
+
+
 def main(ip, config_path, proxies):
+    init_360ti(config_path)
     ThreatBook_result = ThreatBook(ip, config_path)
+    ti360(ip)
     IP_reverse_url = []
     IP_reverse1_result = IP_reverse1(ip, proxies)
     if IP_reverse1_result != 0:
@@ -490,6 +534,7 @@ def main(ip, config_path, proxies):
         result['注册时间'] = 'N/A'
         result['到期时间'] = 'N/A'
         pools.append(result)
+
 
 
 if __name__ == '__main__':
