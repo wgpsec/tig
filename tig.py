@@ -19,6 +19,7 @@ from rich.table import Table
 from rich.progress import track
 from rich.console import Console
 from configparser import ConfigParser
+from prettytable import PrettyTable
 
 console = Console()
 requests.packages.urllib3.disable_warnings()
@@ -310,34 +311,87 @@ def init_360ti(config_path):
     cfg = ConfigParser()
     cfg.read(config_path, encoding='utf-8-sig')
     ti_portal = cfg.get('Api Config', 'ti360_cookie').strip("'").strip()
+    if ti_portal == "":
+        console.log('[red][EROR] 未检测到360威胁情报Cookie查询可能会有限制')
     s.cookies.set("ti_portal", ti_portal)
 
 
 def req_360ti(info_type, query):
     url = "https://ti.360.cn/ti/{}?query={}".format(info_type, query)
-    r = s.get(url, headers=random_useragent(), timeout=5, verify=False)
+    try:
+        r = s.get(url, headers=random_useragent(), timeout=5, verify=False)
+    except requests.exceptions.ConnectTimeout:
+        if 'api.hackertarget.com' not in url:
+            console.log('[red][EROR] 连接 %s 超时' % url)
+        return 'Error'
+    except requests.exceptions.ProxyError:
+        console.log('[red][EROR] 连接代理失败' % url)
+        return 'Error'
+    except Exception as e:
+        console.log('[red][EROR] 访问 %s 发生错误，错误信息： %s ' % (url, repr(e)))
+        return 'Error'
     s.cookies.update(r.cookies)
     return r.json()["data"]
 
 
 def ti360(ip):  # 360威胁情报查询
     ti360_infos = {}
-    query_dict = ["ip_info", "ip_whois", "ip_rdns"]
-    ky_dict=['ip_info',"ip_whois"]
+    query_dict = ["ip_info", "ip_rdns", "ip_ports"]
+    ky_dict = ['ip_info', "ip_whois"]
     for t in query_dict:
         tmp = req_360ti(t, ip)
         if tmp is not None:
             ti360_infos[t] = tmp
+    table = PrettyTable()
+    dns_table = PrettyTable()
+    port_table = PrettyTable()
     for t in ti360_infos:
-        print("====={}====".format(t))
+        print("===== {} ====".format(t))
+        i_data_list = []
+        i_data_key = []
         for s, v in ti360_infos[t].items():
             if t in ky_dict:
-                print(v['key'], ":", v['value'])
-            elif t =="ip_rdns":
-                for ip_rdns_tiem in v['value']:
-                    print(ip_rdns_tiem)
-            else:
-                print(v)
+                v_t = v['value']
+                if s == "ips":
+                    continue
+                if s == "asn":
+                    continue
+                if s == "network_type":
+                    v_t = v_t['type']
+                if s == "tag":
+                    str_s = ""
+                    for t0, t1 in v_t.items():
+                        str_s += (" ".join(t1) + " ")
+                    v_t = str_s
+                i_data_key.append(str(v['key']))
+                i_data_list.append(v_t)
+            elif t == "ip_rdns":
+                i_data_key = ["域名", "DNS记录", "标签"]
+                dns_table.field_names = tuple(i_data_key)
+                ip_rdns_item = v['value']
+                for v1 in ip_rdns_item:
+                    str_s_s = ""
+                    for t0, t1 in v1['tag'].items():
+                        str_s_s += (" ".join(t1) + " ")
+                    dns_table.add_row([v1['rrname'], v1['rrtype'], str_s_s])
+
+        if t == "ip_ports":
+            i_data_key = ["端口", "服务协议", "服务名称", "版本信息"]
+            port_table.field_names = tuple(i_data_key)
+            item = dict(ti360_infos["ip_ports"])['ip_ports']
+            for v1 in item:
+                port_table.add_row([v1['port'], v1['name'], v1['os_name'], v1['os_version']])
+
+        if t in ky_dict:
+            table.field_names = tuple(i_data_key)
+            table.add_row(i_data_list)
+            console.print(table)
+        if t == "ip_rdns":
+            console.print(dns_table)
+        if t == "ip_ports":
+            console.print(port_table)
+
+
 # === 360 TEST END
 
 
@@ -534,7 +588,6 @@ def main(ip, config_path, proxies):
         result['注册时间'] = 'N/A'
         result['到期时间'] = 'N/A'
         pools.append(result)
-
 
 
 if __name__ == '__main__':
