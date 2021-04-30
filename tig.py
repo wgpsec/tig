@@ -309,8 +309,13 @@ s = requests.Session()
 
 def init_360ti(config_path):
     cfg = ConfigParser()
-    cfg.read(config_path, encoding='utf-8-sig')
-    ti_portal = cfg.get('Api Config', 'ti360_cookie').strip("'").strip()
+    ti_portal = ""
+    try:
+        cfg.read(config_path, encoding='utf-8-sig')
+        ti_portal = cfg.get('Api Config', 'ti360_cookie').strip("'").strip()
+    except:
+        console.log('[red][EROR] 未检测到360威胁情报Cookie查询可能会有限制')
+        pass
     if ti_portal == "":
         console.log('[red][EROR] 未检测到360威胁情报Cookie查询可能会有限制')
     s.cookies.set("ti_portal", ti_portal)
