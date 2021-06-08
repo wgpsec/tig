@@ -78,6 +78,18 @@ python3 tig.py
 
 ## 帮助信息
 
+UNIX 安装指南：
+
+```bash
+cd /opt/
+git clone https://github.com/wgpsec/tig.git
+echo '#!/bin/bash
+cd /opt/tig
+python3 tig.py $@' > /usr/bin/tig
+chmod +x /usr/bin/tig
+tig -v
+```
+
 工具命令如下：
 
 ```
