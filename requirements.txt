@@ -2,4 +2,5 @@ requests
 pandas
 rich
 openpyxl
+PrettyTable
  
