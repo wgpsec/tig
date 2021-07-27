@@ -2,6 +2,8 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/wgpsec/tig)](https://github.com/wgpsec/tig) [![GitHub issues](https://img.shields.io/github/issues/wgpsec/tig)](https://github.com/wgpsec/tig/issues) [![GitHub release](https://img.shields.io/github/release/wgpsec/tig)](https://github.com/wgpsec/tig/releases) ![](https://img.shields.io/badge/python-%3E%3D3.6-yellow) [![](https://img.shields.io/badge/author-TeamsSix-blueviolet)](https://github.com/teamssix) [![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)](https://github.com/wgpsec)
 
+![tig](https://socialify.git.ci/wgpsec/tig/image?description=1&font=Inter&forks=1&issues=1&language=1&logo=https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F49087564&owner=1&pattern=Circuit%20Board&pulls=1&stargazers=1&theme=Dark)
+
 # 0x00 介绍
 
 ## 解决问题
