@@ -5,10 +5,11 @@
 # Author : TeamsSix
 # Author blog : https://www.teamssix.com
 
-
+import re
 import os
 import sys
 import time
+import whois
 import base64
 import random
 import requests
@@ -19,7 +20,6 @@ from rich.table import Table
 from rich.progress import track
 from rich.console import Console
 from configparser import ConfigParser
-from prettytable import PrettyTable
 
 console = Console()
 requests.packages.urllib3.disable_warnings()
@@ -74,7 +74,6 @@ def init(config_path):
         ThreatBook_api = input('请输入您的微步 Api：')
         Fofa_email = input('请输入您的Fofa邮箱：')
         Fofa_api = input('请输入您的Fofa Api：')
-        ti360_cookie = input('请输入360威胁情报中心cookie ti_portal：')
         config_text = '''[Api Config]
 
 # 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/nodev4/vb4/myAPI（每天 50 次的免费额度）
@@ -83,9 +82,7 @@ ThreatBook_api = '{ThreatBook_api}'
 # Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
 Fofa_email = '{Fofa_email}'
 Fofa_api = '{Fofa_api}'
-# 360威胁情报中心Cookie （暂无API支持）
-ti360_cookie = '{ti360_cookie}'
-'''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api, ti360_cookie=ti360_cookie)
+'''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api)
         with open(config_path, 'w', encoding='utf-8-sig') as w:
             w.write(config_text)
     else:
@@ -207,6 +204,14 @@ def IP_survive(ip):
         return 1
 
 
+def Judge_ip(ip):
+    compile_ip = re.compile(
+        '^(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[1-9])\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)$')
+    if compile_ip.match(ip):
+        return True
+    else:
+        return False
+
 def IP_reverse1(ip, proxies):
     url = 'http://api.hackertarget.com/reverseiplookup/?q=%s' % ip
     r = req(url, random_useragent(), proxies)
@@ -303,107 +308,8 @@ def Fofa(ip, config_path):  # Fofa ip 信息查询
             return (IP_survive_bool, 0, 0)
 
 
-# 360TI TEST version
-s = requests.Session()
-
-
-def init_360ti(config_path):
-    cfg = ConfigParser()
-    ti_portal = ""
-    try:
-        cfg.read(config_path, encoding='utf-8-sig')
-        ti_portal = cfg.get('Api Config', 'ti360_cookie').strip("'").strip()
-    except:
-        console.log('[red][EROR] 未检测到360威胁情报Cookie查询可能会有限制')
-        pass
-    if ti_portal == "":
-        console.log('[red][EROR] 未检测到360威胁情报Cookie查询可能会有限制')
-    s.cookies.set("ti_portal", ti_portal)
-
-
-def req_360ti(info_type, query):
-    url = "https://ti.360.cn/ti/{}?query={}".format(info_type, query)
-    try:
-        r = s.get(url, headers=random_useragent(), timeout=5, verify=False)
-    except requests.exceptions.ConnectTimeout:
-        if 'api.hackertarget.com' not in url:
-            console.log('[red][EROR] 连接 %s 超时' % url)
-        return 'Error'
-    except requests.exceptions.ProxyError:
-        console.log('[red][EROR] 连接代理失败' % url)
-        return 'Error'
-    except Exception as e:
-        console.log('[red][EROR] 访问 %s 发生错误，错误信息： %s ' % (url, repr(e)))
-        return 'Error'
-    s.cookies.update(r.cookies)
-    return r.json()["data"]
-
-
-def ti360(ip):  # 360威胁情报查询
-    ti360_infos = {}
-    query_dict = ["ip_info", "ip_rdns", "ip_ports"]
-    ky_dict = ['ip_info', "ip_whois"]
-    for t in query_dict:
-        tmp = req_360ti(t, ip)
-        if tmp is not None:
-            ti360_infos[t] = tmp
-    table = PrettyTable()
-    dns_table = PrettyTable()
-    port_table = PrettyTable()
-    for t in ti360_infos:
-        print("===== {} ====".format(t))
-        i_data_list = []
-        i_data_key = []
-        for s, v in ti360_infos[t].items():
-            if t in ky_dict:
-                v_t = v['value']
-                if s == "ips":
-                    continue
-                if s == "asn":
-                    continue
-                if s == "network_type":
-                    v_t = v_t['type']
-                if s == "tag":
-                    str_s = ""
-                    for t0, t1 in v_t.items():
-                        str_s += (" ".join(t1) + " ")
-                    v_t = str_s
-                i_data_key.append(str(v['key']))
-                i_data_list.append(v_t)
-            elif t == "ip_rdns":
-                i_data_key = ["域名", "DNS记录", "标签"]
-                dns_table.field_names = tuple(i_data_key)
-                ip_rdns_item = v['value']
-                for v1 in ip_rdns_item:
-                    str_s_s = ""
-                    for t0, t1 in v1['tag'].items():
-                        str_s_s += (" ".join(t1) + " ")
-                    dns_table.add_row([v1['rrname'], v1['rrtype'], str_s_s])
-
-        if t == "ip_ports":
-            i_data_key = ["端口", "服务协议", "服务名称", "版本信息"]
-            port_table.field_names = tuple(i_data_key)
-            item = dict(ti360_infos["ip_ports"])['ip_ports']
-            for v1 in item:
-                port_table.add_row([v1['port'], v1['name'], v1['os_name'], v1['os_version']])
-
-        if t in ky_dict:
-            table.field_names = tuple(i_data_key)
-            table.add_row(i_data_list)
-            console.print(table)
-        if t == "ip_rdns":
-            console.print(dns_table)
-        if t == "ip_ports":
-            console.print(port_table)
-
-
-# === 360 TEST END
-
-
 def main(ip, config_path, proxies):
-    init_360ti(config_path)
     ThreatBook_result = ThreatBook(ip, config_path)
-    ti360(ip)
     IP_reverse_url = []
     IP_reverse1_result = IP_reverse1(ip, proxies)
     if IP_reverse1_result != 0:
@@ -433,6 +339,9 @@ def main(ip, config_path, proxies):
     console.print(table)
     time.sleep(1)
     if len(IP_reverse_url) > 0:
+        for ip2 in IP_reverse_url:
+            if Judge_ip(ip2):
+                IP_reverse_url.remove(ip2)
         IP_reverse_url = list(set(IP_reverse_url))
         IP_reverse_url.sort()
 
@@ -476,63 +385,38 @@ def main(ip, config_path, proxies):
                 result['备案号'] = 'N/A'
 
             try:
-                url_whois = 'https://api.devopsclub.cn/api/whoisquery?domain=%s&type=json' % i
-                r_whois = req(url_whois, random_useragent(), proxies)
-                if 'Error' != r_whois:
-                    r_whois_json = r_whois.json()
-                    r_whois_text = r_whois.text
-                    if r_whois.status_code == 200:
-                        if r_whois_json['msg'] != 'query fail':
-                            if 'registrar' in r_whois_text:
-                                result['注册人'] = r_whois_json['data']['data']['registrar']
-                            elif 'registrant' in r_whois_text:
-                                result['注册人'] = r_whois_json['data']['data']['registrant']
-                            else:
-                                result['注册人'] = 'N/A'
-
-                            if 'registrarAbuseContactEmail' in r_whois_text:
-                                result['注册邮箱'] = r_whois_json['data']['data']['registrarAbuseContactEmail']
-                            elif 'registrantContactEmail' in r_whois_text:
-                                result['注册邮箱'] = r_whois_json['data']['data']['registrantContactEmail']
-                            else:
-                                result['注册邮箱'] = 'N/A'
-
-                            if 'registrarWHOISServer' in r_whois_text:
-                                result['注册商'] = r_whois_json['data']['data']['registrarWHOISServer']
-                            elif 'sponsoringRegistrar' in r_whois_text:
-                                result['注册商'] = r_whois_json['data']['data']['sponsoringRegistrar']
-                            else:
-                                result['注册商'] = 'N/A'
-
-                            if 'creationDate' in r_whois_text:
-                                result['注册时间'] = \
-                                    r_whois_json['data']['data']['creationDate'].split('T')[0]
-                            elif 'registrationTime' in r_whois_text:
-                                result['注册时间'] = \
-                                    r_whois_json['data']['data']['registrationTime'].split(' ')[0]
-                            else:
-                                result['注册时间'] = 'N/A'
-
-                            if 'registryExpiryDate' in r_whois_text:
-                                result['到期时间'] = \
-                                    r_whois_json['data']['data']['registryExpiryDate'].split('T')[0]
-                            elif 'expirationTime' in r_whois_text:
-                                result['到期时间'] = \
-                                    r_whois_json['data']['data']['expirationTime'].split(' ')[0]
-                            else:
-                                result['到期时间'] = 'N/A'
-                        else:
-                            result['注册人'] = 'N/A'
-                            result['注册邮箱'] = 'N/A'
-                            result['注册商'] = 'N/A'
-                            result['注册时间'] = 'N/A'
-                            result['到期时间'] = 'N/A'
-                    else:
+                if "edu.cn" in i.strip():
+                    result['注册人'] = 'N/A'
+                    result['注册邮箱'] = 'N/A'
+                    result['注册商'] = 'N/A'
+                    result['注册时间'] = 'N/A'
+                    result['到期时间'] = 'N/A'
+                else:
+                    r_whois = whois.whois(i.strip())
+                    result['注册人'] = r_whois["name"]
+                    if result['注册人'] == None:
                         result['注册人'] = 'N/A'
+
+                    result['注册邮箱'] = r_whois["emails"]
+                    if result['注册邮箱'] == None:
                         result['注册邮箱'] = 'N/A'
+
+                    try:
+                        result['注册商'] = r_whois["org"]
+                    except:
                         result['注册商'] = 'N/A'
+
+                    result['注册时间'] = r_whois["creation_date"]
+                    if result['注册时间'] == None:
                         result['注册时间'] = 'N/A'
+                    else:
+                        result['注册时间'] = r_whois["creation_date"].strftime('%Y-%m-%d %H:%M:%S')
+
+                    result['到期时间'] = r_whois["expiration_date"]
+                    if result['到期时间'] == None:
                         result['到期时间'] = 'N/A'
+                    else:
+                        result['到期时间'] = r_whois["expiration_date"].strftime('%Y-%m-%d %H:%M:%S')
             except Exception as e:
                 console.log('[red][EROR] 查询 %s 的 Whois 信息发生错误，错误信息：%s' % (i.strip(), repr(e)))
                 result['注册人'] = 'N/A'
@@ -600,7 +484,7 @@ if __name__ == '__main__':
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
 |T|h|r|e|a|t| |I|n|t|e|l|l|i|g|e|n|c|e| |G|a|t|h|e|r|i|n|g|
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
-    团队：狼组安全团队   作者：TeamsSix    版本：0.5.2       
+    团队：狼组安全团队   作者：TeamsSix    版本：0.5.3       
     ''')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', dest='config', help='指定配置文件，默认 ./config.ini')
