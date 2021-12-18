@@ -50,7 +50,7 @@ TIG `Threat Intelligence Gathering` ，即威胁情报收集。
 
 假设在获取到的信息最大化情况下，通过 TIG 可以一键发现 IP 对应的情报标签、域名、域名注册人、备案邮箱、备案号、备案单位、域名注册商、IP 开放端口、地理位置等等信息。
 
-![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//TIG.png)
+![](./img/TIG.png)
 
 后续将集成更多模块，如有好的建议或遇到 Bug 欢迎提 issue
 
@@ -107,7 +107,7 @@ tig -v
 
 如果是第一次使用本工具，在启动时会提示输入您的微步 API 和 Fofa API
 
-![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//tig2.png)
+![](./img/tig2.png)
 
 查看自己微步 API  Key 的地址为：[https://x.threatbook.cn/nodev4/vb4/myAPI](https://x.threatbook.cn/nodev4/vb4/myAPI)，免费账户有每天 50 次的限额。
 
@@ -115,21 +115,21 @@ tig -v
 
 如果之前使用过历史版本，程序会自动根据原来的配置文件生成当前的配置文件，无需手动更改。
 
- ![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//tig3.png)
+ ![](./img/tig3.png)
 
 ## 示例
 
 例如这里要获取某个 IP 的信息，直接使用 -i 命令即可，结果会默认保存到 output 文件夹内，或者 -o 指定导出文件位置。
 
-![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//tig4.png)
+![](./img/tig4.png)
 
 或者直接指定一个 IP 列表，结果导出到 result.xlsx 文件里。
 
-![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//tig5.png)
+![](./img/tig5.png)
 
 导出表格文件信息如下
 
-![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//tig6.png)
+![](./img/tig6.png)
 
 # 0x03 最后
 
@@ -139,4 +139,4 @@ tig -v
 
 [![Stargazers over time](https://starchart.cc/wgpsec/tig.svg)](https://starchart.cc/wgpsec/tig)
 
-![](https://cdn.jsdelivr.net/gh/teamssix/BlogImages/imgs//wechat.png)
+![](./img/wechat.png)
