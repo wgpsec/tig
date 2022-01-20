@@ -20,7 +20,7 @@ TIG `Threat Intelligence Gathering` ，即威胁情报收集。
 
 
 
-求 start ⭐️ ~~~~
+求 Star ⭐️ ~~~~
 
 
 
@@ -135,7 +135,7 @@ tig -v
 
 如果各位师傅在使用工具的过程中发现存在 bug 或者有好的建议，欢迎多多提 issue。
 
-如果感觉使用起来还不错，欢迎师傅赏个 star ！！！！ 
+如果感觉使用起来还不错，欢迎师傅赏个 Star ！！！！ 
 
 [![Stargazers over time](https://starchart.cc/wgpsec/tig.svg)](https://starchart.cc/wgpsec/tig)
 
