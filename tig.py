@@ -4,7 +4,7 @@
 # Team Github : https://github.com/wgpsec
 # Author : TeamsSix
 # Author blog : https://www.teamssix.com
- 
+
 import re
 import os
 import sys
@@ -484,7 +484,7 @@ if __name__ == '__main__':
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
 |T|h|r|e|a|t| |I|n|t|e|l|l|i|g|e|n|c|e| |G|a|t|h|e|r|i|n|g|
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
-    团队：狼组安全团队   作者：TeamsSix    版本：0.5.3       
+    团队：狼组安全团队   作者：TeamsSix    版本：0.5.4       
     ''')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', dest='config', help='指定配置文件，默认 ./config.ini')
