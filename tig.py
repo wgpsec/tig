@@ -4,7 +4,7 @@
 # Team Github : https://github.com/wgpsec
 # Author : TeamsSix
 # Author blog : https://www.teamssix.com
-
+ 
 import re
 import os
 import sys
