@@ -272,7 +272,7 @@ def Fofa(ip, config_path):  # Fofa ip 信息查询
             IP_survive_bool = '否'
         size = 100
         search_string_byte = base64.b64encode(ip.encode('utf-8')).decode()
-        url = 'https://fofa.so/api/v1/search/all?email=%s&key=%s&qbase64=%s&size=%s' % (
+        url = 'https://fofa.info/api/v1/search/all?email=%s&key=%s&qbase64=%s&size=%s' % (
             Fofa_email, Fofa_api, search_string_byte, size)
         proxies = {'http': None, 'https': None}
         try:
