@@ -9,433 +9,639 @@ import re
 import os
 import sys
 import time
-import whois
+import traceback
+import pandas
 import base64
-import random
 import requests
 import argparse
 import subprocess
+
 from pandas import DataFrame
-from rich.table import Table
 from rich.progress import track
+from rich.table import Table
 from rich.console import Console
 from configparser import ConfigParser
+from whois import whois
+from json import JSONDecodeError
+
+# 导入自定义函数
+from ti_api.Nsfocus import nsfocus
+from ti_api.ThreatBook import threatbook
+from common.random_ua import random_useragent
+from common.req import req
 
 console = Console()
 requests.packages.urllib3.disable_warnings()
 
 
-def random_useragent():
-    ua = [
-        "Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
-        "Mozilla/5.0 (Windows; U; Windows NT 6.1; en-us) AppleWebKit/534.50 (KHTML, like Gecko) Version/5.1 Safari/534.50",
-        "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:38.0) Gecko/20100101 Firefox/38.0",
-        "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; .NET4.0C; .NET4.0E; .NET CLR 2.0.50727; .NET CLR 3.0.30729; .NET CLR 3.5.30729; InfoPath.3; rv:11.0) like Gecko",
-        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)",
-        "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)",
-        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.6; rv:2.0.1) Gecko/20100101 Firefox/4.0.1",
-        "Mozilla/5.0 (Windows NT 6.1; rv:2.0.1) Gecko/20100101 Firefox/4.0.1",
-        "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; en) Presto/2.8.131 Version/11.11",
-        "Opera/9.80 (Windows NT 6.1; U; en) Presto/2.8.131 Version/11.11",
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_0) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.56 Safari/535.11",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Maxthon 2.0)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; TencentTraveler 4.0)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; The World)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Trident/4.0; SE 2.X MetaSr 1.0; SE 2.X MetaSr 1.0; .NET CLR 2.0.50727; SE 2.X MetaSr 1.0)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; 360SE)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; Avant Browser)",
-        "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)",
-        "Mozilla/5.0 (iPhone; U; CPU iPhone OS 4_3_3 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8J2 Safari/6533.18.5",
-        "Mozilla/5.0 (iPod; U; CPU iPhone OS 4_3_3 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8J2 Safari/6533.18.5",
-        "Mozilla/5.0 (iPad; U; CPU OS 4_3_3 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8J2 Safari/6533.18.5",
-        "Mozilla/5.0 (Linux; U; Android 2.3.7; en-us; Nexus One Build/FRF91) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
-        "MQQBrowser/26 Mozilla/5.0 (Linux; U; Android 2.3.7; zh-cn; MB200 Build/GRJ22; CyanogenMod-7) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
-        "Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10",
-        "Mozilla/5.0 (Linux; U; Android 3.0; en-us; Xoom Build/HRI39) AppleWebKit/534.13 (KHTML, like Gecko) Version/4.0 Safari/534.13",
-        "Mozilla/5.0 (BlackBerry; U; BlackBerry 9800; en) AppleWebKit/534.1+ (KHTML, like Gecko) Version/6.0.0.337 Mobile Safari/534.1+",
-        "Mozilla/5.0 (hp-tablet; Linux; hpwOS/3.0.0; U; en-US) AppleWebKit/534.6 (KHTML, like Gecko) wOSBrowser/233.70 Safari/534.6 TouchPad/1.0",
-        "Mozilla/5.0 (SymbianOS/9.4; Series60/5.0 NokiaN97-1/20.0.019; Profile/MIDP-2.1 Configuration/CLDC-1.1) AppleWebKit/525 (KHTML, like Gecko) BrowserNG/7.1.18124",
-        "Mozilla/5.0 (compatible; MSIE 9.0; Windows Phone OS 7.5; Trident/5.0; IEMobile/9.0; HTC; Titan)",
-        "UCWEB7.0.2.37/28/999",
-        "NOKIA5700/ UCWEB7.0.2.37/28/999",
-        "Openwave/ UCWEB7.0.2.37/28/999",
-        "Mozilla/4.0 (compatible; MSIE 6.0; ) Opera/UCWEB7.0.2.37/28/999",
-        "Mozilla/6.0 (iPhone; CPU iPhone OS 8_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/8.0 Mobile/10A5376e Safari/8536.25"]
-    random_user_agent = {"User-Agent": random.choice(ua)}
-    return random_user_agent
-
-
 def init(config_path):
-    if not os.path.exists(config_path):  # 不存在配置文件
-        console.log('检测到您可能是第一次运行本程序，请根据程序提示输入您的API地址，如果没有直接回车即可，但在查询时将不会调用相关模块')
-        ThreatBook_api = input('请输入您的微步 Api：')
-        Fofa_email = input('请输入您的Fofa邮箱：')
-        Fofa_api = input('请输入您的Fofa Api：')
-        config_text = '''[Api Config]
+    """
+    初始化函数
+    :param config_path:     配置文件路径
+    :return:                无
+    """
+    # 不存在配置文件
+    if not os.path.exists(config_path):
+        console.log('检测到您可能是第一次运行本程序，请根据程序提示输入您的 API 地址，\
+                    如果没有直接回车即可，但在查询时将不会调用相关模块')
+        threatbook_api_0 = input("请输入您的微步 Api: ")
+        threatbook_api_1 = input("请再输入一个微步 Api，若无，则直接回车：")
+        nsfocus_api = input('请输入您的绿盟 Api，若无，则直接回车：')
+        fofa_email = input('请输入您的 Fofa 邮箱：')
+        fofa_api = input('请输入您的 Fofa Api: ')
+        # 该部分必须顶格
+        config_text = f'''[Api Config]
+ThreatBook_enable = True
+Nsfocus_enable = False
+FOFA_enable = True
+# 逆向解析域名可获取更多域名相关信息，建议与 Fofa 开关配合使用
+Revrse_IP_Lookup_enable = True
 
-# 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/nodev4/vb4/myAPI（每天 50 次的免费额度）
-ThreatBook_api = '{ThreatBook_api}'
+[ThreatBook]
+# 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/v5/myApi（每天 50 次的免费额度）
+# 支持写入多个，API 顺序读取，第一个查询达到上限 50 个时，则更换为下一个
+api_key_0 = '{threatbook_api_0}'
+api_key_1 = '{threatbook_api_1}'
 
-# Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
-Fofa_email = '{Fofa_email}'
-Fofa_api = '{Fofa_api}'
-'''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api)
+[Nsfocus]
+# 绿盟威胁情报查询，需要自行获取
+Nsfocus_api = '{nsfocus_api}'
+
+[FOFA]
+# Fofa ip 信息查询，查看 api 地址：https://fofa.info/userInfo
+#（付费，普通会员每次 100 条，高级会员每次 10000 条）
+Fofa_email = '{fofa_email}'
+Fofa_api = '{fofa_api}'
+size = 100
+'''
         with open(config_path, 'w', encoding='utf-8-sig') as w:
             w.write(config_text)
     else:
         with open(config_path, encoding='utf-8-sig') as f:
             f = f.read()
-        if 'Threat Intelligence' in f:
-            console.log('检测存在历史版本配置文件，正在自动更新配置文件……')
-            cfg = ConfigParser()
-            cfg.read(config_path, encoding='utf-8-sig')
-            ThreatBook_api = cfg.get('Threat Intelligence', 'ThreatBook_api').strip("'").strip()
-            Fofa_email = cfg.get('IP Passive Information', 'Fofa_email').strip("'")
-            Fofa_api = cfg.get('IP Passive Information', 'Fofa_api').strip("'").strip()
-            config_text = '''[Api Config]
-
-# 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/nodev4/vb4/myAPI（每天 50 次的免费额度）
-ThreatBook_api = '{ThreatBook_api}'
-
-# Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
-Fofa_email = '{Fofa_email}'
-Fofa_api = '{Fofa_api}'
-'''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api)
-            with open(config_path, 'w', encoding='utf-8-sig') as w:
-                w.write(config_text)
-            time.sleep(1)
-            console.log('配置文件更新完成')
-            time.sleep(1)
-        elif 'Api Config' not in f:
+        if '[ThreatBook]' not in f:
             os.rename(config_path, config_path + '.bak')
             init(config_path)
 
 
-def req(url, headers, proxies):
-    try:
-        r = requests.get(url, headers=headers, proxies=proxies, timeout=5, verify=False)
-        return r
-    except requests.exceptions.ConnectTimeout:
-        if 'api.hackertarget.com' not in url:
-            console.log('[red][EROR] 连接 %s 超时' % url)
-        return 'Error'
-    except requests.exceptions.ProxyError:
-        console.log('[red][EROR] 连接代理失败' % url)
-        return 'Error'
-    except Exception as e:
-        console.log('[red][EROR] 访问 %s 发生错误，错误信息： %s ' % (url, repr(e)))
-        return 'Error'
-
-
-def ThreatBook(ip, config_path):  # 微步威胁情报查询
-    cfg = ConfigParser()
-    cfg.read(config_path, encoding='utf-8-sig')
-    ThreatBook_api = cfg.get('Api Config', 'ThreatBook_api').strip("'").strip()
-
-    if ThreatBook_api == "":
-        console.log('[red][EROR] 未检测到微步 API')
-        return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
-    else:
-        url = 'https://api.threatbook.cn/v3/scene/ip_reputation'
-        query = {
-            "apikey": "%s" % ThreatBook_api,
-            "resource": "%s" % ip,
-            "lang": "zh"
-        }
-        try:
-            r = requests.request("GET", url, params=query, verify=False, proxies={'http': None, 'https': None})
-            r_json = r.json()
-            if r_json['response_code'] != 0:
-                console.log('[red][EROR] 微步 API 调用失败，错误信息：%s' % r_json['verbose_msg'])
-                return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
-            else:
-                confidence_level = r_json['data']['%s' % ip]['confidence_level']  # 情报可信度
-                if r_json['data']['%s' % ip]['is_malicious'] == False:  # 是否为恶意 IP
-                    is_malicious = '否'
-                else:
-                    is_malicious = '是'
-                severity = r_json['data']['%s' % ip]['severity']  # 危害程度
-                judgments = ",".join(r_json['data']['%s' % ip]['judgments'])  # 威胁类型
-                tags_classes = r_json['data']['%s' % ip]['tags_classes']  # 标签类别
-                tags = []  # 标签
-                tags_type = []  # 标签类型
-                for i in tags_classes:
-                    tags.append(",".join(i['tags']))
-                    tags_type.append(i['tags_type'])
-                tags = ','.join(tags)
-                tags_type = ','.join(tags_type)
-                scene = r_json['data']['%s' % ip]['scene']  # 场景
-                carrier = r_json['data']['%s' % ip]['basic']['carrier']  # IP 基本信息
-                location = r_json['data']['%s' % ip]['basic']['location']
-                ip_location = location['country'] + ' ' + location['province'] + ' ' + location['city']  # IP 地理位置
-                table = Table()
-                table.add_column('是否为恶意IP', justify="center")
-                table.add_column('危害程度', justify="center")
-                table.add_column('威胁类型', justify="center")
-                table.add_column('标签', justify="center")
-                table.add_column('标签类型', justify="center")
-                table.add_column('场景', justify="center")
-                table.add_column('IP基本信息', justify="center")
-                table.add_column('IP地理位置', justify="center")
-                table.add_column('情报可信度', justify="center")
-                table.add_row(is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location,
-                              confidence_level)
-                console.log('[green][SUCC] %s 微步威胁情报信息：' % ip)
-                console.print(table)
-                return (
-                    is_malicious, severity, judgments, tags, tags_type, scene, carrier, ip_location, confidence_level)
-        except Exception as e:
-            console.log('[red][EROR] 查询 %s 的微步信息发生错误，错误信息：%s' % (ip, repr(e)))
-            return ('N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A', 'N/A')
-
-
-def IP_survive(ip):
-    os_name = os.name
-    if os_name == 'nt':
-        res = subprocess.call("ping -n 1 %s" % ip, shell=True, stdout=subprocess.PIPE)
-    else:
-        res = subprocess.call("ping -c 1 %s" % ip, shell=True, stdout=subprocess.PIPE)
-    if res == 0:
-        return 0
-    else:
-        return 1
-
-
-def Judge_ip(ip):
-    compile_ip = re.compile(
-        '^(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[1-9])\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)$')
-    if compile_ip.match(ip):
+def is_ip(ip):
+    """
+    判断 IP 是否合法
+    :param ip:      IP 地址
+    :return:        bool 类型
+    """
+    if re.match(r'^(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|[1-9])\.'
+                r'(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.'
+                r'(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)\.'
+                r'(1\d{2}|2[0-4]\d|25[0-5]|[1-9]\d|\d)$', ip):
         return True
     else:
         return False
 
-def IP_reverse1(ip, proxies):
-    url = 'http://api.hackertarget.com/reverseiplookup/?q=%s' % ip
-    r = req(url, random_useragent(), proxies)
-    if 'Error' != r:
-        if 'API count exceeded - Increase Quota with Membership' not in r.text:  # 判断当前 IP 免费查询次数未用完，每个 IP 限制 100 条的免费查询限制
-            IP_reverse1_list = []
-            for i in r.text.split('\n'):
-                if i != ip:
-                    IP_reverse1_list.append(i)
-                if IP_reverse1_list != []:
-                    return IP_reverse1_list
-                else:
-                    return 0
-        else:
-            return 0
-    else:
-        return 0
 
-
-def IP_reverse2(ip, proxies):
-    url = 'http://api.webscan.cc/?action=query&ip=%s' % ip
+def is_ip_alive_cmd(ip):
+    """
+    检测 ip 是否存活，通过 ping 命令的方式检测 IP 是否存活，可信度不高，因此后续的函数并未调用
+    :param ip:     ip 地址
+    :return:       存活返回 True，否则返回 False
+    """
+    # 判断 ip 是否存活
     try:
-        r = requests.get(url, headers=random_useragent(), proxies=proxies, timeout=5, verify=False)
-    except:
-        return 0
-    if 'Error' != r:
-        if r.text != 'null':
-            IP_reverse2_list = []
-            for ip in r.json():
-                IP_reverse2_list.append(ip['domain'].strip())
-            if IP_reverse2_list != []:
-                return IP_reverse2_list
-            else:
-                return 0
+        os_name = os.name
+        if os_name == 'nt':
+            cmd = f"ping -n 1 {ip}"
         else:
-            return 0
+            cmd = f"ping -c 1 {ip}"
+
+        # 执行命令
+        output = subprocess.check_output(cmd, shell=True).decode('utf-8')
+        # 判断是否存活
+        if 'unreachable' in output:
+            return False
+        else:
+            return True
+    except subprocess.CalledProcessError as exc:
+        console.log(f"[red][EROR] 检测 {ip} ping 命令程序错误，cmd: {exc.cmd}; output: {exc.output}; [/red]")
+        return False
+    except Exception:
+        console.log(f"[red][EROR] 检测 {ip} 是否存活发生程序错误，错误信息：{traceback.format_exc()}[/red]")
+        return False
+
+
+def reverse_ip_lookup(ip, proxies):
+    """
+    通过 IP 反查域名，返回域名
+    https://api.hackertarget.com/reverseiplookup/?q=x.x.x.x     请求次数每日免费仅 10 次，因此删除该链接
+    :param ip:     ip 地址
+    :return:       域名列表，list 类型
+    """
+    domain_list = []
+    url = f"http://api.webscan.cc/?action=query&ip={ip}"
+
+    r = req(url, headers=random_useragent(), proxies=proxies)
+    # 当且仅当 Response 对象存在且不为 'null' 时，才返回域名列表
+    try:
+        if r and r.text != 'null':
+            domain_list = []
+            for i in r.json():
+                domain_list.append(i['domain'].strip())
+            return domain_list
+        else:
+            return domain_list
+    except JSONDecodeError:
+        console.log(f"[red][EROR] 反查 {ip} 域名 json 解析错误，原始信息：{r.text}[/red]")
+        return domain_list
+    except Exception:
+        console.log(f"[red][EROR] 反查 {ip} 域名发生程序错误，错误信息：{traceback.format_exc()}[/red]")
+        return domain_list
+
+
+def fofa(ip, fofa_email, fofa_api, size):
+    """
+    查询 fofa 接口
+    :param ip:              查询 IP
+    :param fofa_email:      fofa 账户，email 格式
+    :param fofa_email:      fofa API
+    :return:
+        fofa_port:          fofa 开放端口，string 类型，以逗号分隔
+        fofa_domain_list:   fofa 开放域名，list 类型
+    """
+    global fofa_port
+    fofa_port = ""
+    global fofa_domain_list
+    fofa_domain_list = []
+    if fofa_api == "":
+        console.log('[red][EROR] 未检测到 Fofa API[/red]')
+        return fofa_port, fofa_domain_list
     else:
-        return 0
-
-
-def Fofa(ip, config_path):  # Fofa ip 信息查询
-    cfg = ConfigParser()
-    cfg.read(config_path, encoding='utf-8-sig')
-    Fofa_email = cfg.get('Api Config', 'Fofa_email').strip("'")
-    Fofa_api = cfg.get('Api Config', 'Fofa_api').strip("'").strip()
-
-    if Fofa_api == "":
-        console.log('[red][EROR] 未检测到Fofa API')
-        if IP_survive(ip) == 0:
-            IP_survive_bool = '是'
-        else:
-            IP_survive_bool = '否'
-        return (IP_survive_bool, 0, 0)
-    else:
-        if IP_survive(ip) == 0:
-            IP_survive_bool = '是'
-        else:
-            IP_survive_bool = '否'
-        size = 100
+        # fofa api 接口 URL
+        url = f"https://fofa.info/api/v1/search/all"
         search_string_byte = base64.b64encode(ip.encode('utf-8')).decode()
-        url = 'https://fofa.info/api/v1/search/all?email=%s&key=%s&qbase64=%s&size=%s' % (
-            Fofa_email, Fofa_api, search_string_byte, size)
         proxies = {'http': None, 'https': None}
+        # 查询参数
+        query = {
+            "email": fofa_email,
+            "key": fofa_api,
+            "qbase64": search_string_byte,
+            "size": size
+        }
+        # 查询
+        r = req(url, random_useragent(), params=query, proxies=proxies)
         try:
-            r = req(url, random_useragent(), proxies)
             r_json = r.json()
-            if r_json['error'] == True:
-                if r_json[
-                    'errmsg'] == '401 Unauthorized, make sure 1.email and apikey is correct 2.FOFA coin is enough.':
-                    console.log('[red][EROR] Fofa API 调用失败，错误原因有：1、Fofa 邮箱或 API 填写错误\t2、F币余额不足')
-                else:
-                    console.log('[red][EROR] Fofa 获取数据发生错误，错误信息：%s' % r_json['errmsg'])
-                return (IP_survive_bool, 0, 0)
-            elif len(r_json['results']) > 0:
 
-                ip_port = []  # 获得 fofa 查询结果中的开放端口信息
+            # 判断是否查询成功，成功返回 True，否则返回 False
+            if not r_json['error']:
+                """correct demo_data, size = 3:
+                {
+                    "error": false,
+                    "mode": "extended",
+                    "page": 1,
+                    "query": "ip=\"1.1.1.1\"",
+                    "results": [
+                        [
+                            "https://cdnwd.net",
+                            "1.1.1.1",
+                            "443"
+                        ],
+                        [
+                            "cdnwd.net",
+                            "1.1.1.1",
+                            "80"
+                        ],
+                        [
+                            "cdnwd.net:53",
+                            "1.1.1.1",
+                            "53"
+                        ]
+                    ],
+                    "size": 23754
+                }
+                """
+                # 获取 fofa 查询结果中的开放端口信息
+                ip_port = [i[2] for i in r_json['results']]
+
+                if ip_port:
+                    # 去重
+                    ip_port_list = list(set(ip_port))
+                    # 排序
+                    ip_port_list.sort(key=int)
+                    # 转换成字符串
+                    fofa_port = ",".join(ip_port_list)
+
+                # 获取 fofa 查询结果中的开放域名信息
                 for i in r_json['results']:
-                    ip_port.append(i[2])
-                ip_port = list(set(ip_port))
-                ip_port.sort(key=int)
-                fofa_port = ",".join(ip_port)
-                fofa_url_result = []  # 获得 fofa 查询结果中的域名信息
-                for i in r_json['results']:
-                    if ip not in i[0]:
-                        if 'http://' not in i[0] and 'https://' not in i[0]:
-                            fofa_url_result.append(i[0].split(':')[0])
-                        else:
-                            fofa_url_result.append(i[0].split('://')[1].split(':')[0] + '\n')
-                return (IP_survive_bool, fofa_port, fofa_url_result)
+                    # url 为 result 中第一个元素，第二个元素为 ip，第三个元素为 port
+                    url = i[0]
+                    if ip not in url:
+                        # 判断 url 是否包含 http:// 或 https://，如果包含，则以 "://" 为分隔符，取出 ip:port
+                        if url.startswith('http') or url.startswith('https'):
+                            url = url.split('://')[1]
+                        # 去除 url 中端口号
+                        url = url.split(':')[0]
+                        # 确保筛选出的域名中不包含 IP 地址
+                        if not is_ip(url):
+                            fofa_domain_list.append(url.split(':')[0])
+                    # 返回 fofa 查询结果中的开放域名信息（暂不去重，与其他 API 接口一起去重）及开放端口信息
+                return (fofa_port, fofa_domain_list)
+            elif r_json['error']:
+                """incorrect demo_data:
+                {
+                    "errmsg": "[-700] Account Invalid",
+                    "error": true
+                }
+                """
+                # 700 为账号异常
+                if "[-700]" in r_json['errmsg']:
+                    console.log(f"[red][EROR] Fofa API 调用失败，错误原因：账号无效 [/red]")
+                else:
+                    console.log(f"[red][EROR] Fofa 获取数据发生错误，错误信息：{r_json['errmsg']}[/red]")
+                return fofa_port, fofa_domain_list
+
             else:
-                return (IP_survive_bool, 0, 0)
-        except Exception as e:
-            console.log('[red][EROR] 查询 %s 的 Fofa 信息发生错误，错误信息：%s' % (ip, repr(e)))
-            return (IP_survive_bool, 0, 0)
+                console.log(f"[red][EROR] 查询 {ip} 的 Fofa 信息发生错误，请求 {url} 返回错误信息：{r_json}[/red]")
+                return fofa_port, fofa_domain_list
+        except JSONDecodeError:
+            console.log(f"[red][EROR] 查询 {ip} 的 Fofa 信息 json 解析错误，原始信息：{r.text}[/red]")
+            return fofa_port, fofa_domain_list
+        except Exception:
+            console.log(f"[red][EROR] 查询 {ip} 的 Fofa 信息发生错误，错误信息：{traceback.format_exc()}[/red]")
+            return fofa_port, fofa_domain_list
+
+
+def domain_info_query(domain, proxies=None):
+    """
+    查询域名信息
+    :param domain:      域名，string 类型
+    :param proxies:     代理
+    :return:
+        domain_info:        正常解析的域名信息，dict 类型
+        domain_json_error   json 格式解析异常的域名
+        domain_error        请求错误或 whois 解析错误的域名
+        domain_edu          edu 域名信息
+    """
+    global domain_info
+    # 初始化域名信息
+    domain_info = {
+        '域名': domain,
+        '标题': 'N/A',
+        '备案类型': 'N/A',
+        '备案名称': 'N/A',
+        '备案号': 'N/A',
+        '注册人': 'N/A',
+        '注册邮箱': 'N/A',
+        '注册商': 'N/A',
+        '注册时间': 'N/A',
+        '到期时间': 'N/A'
+    }
+    # json 解析错误的域名列表
+    domain_json_error = []
+    # 请求错误的域名列表
+    domain_error = []
+    # edu 域名列表
+    domain_edu = []
+    # 互联网信息服务（icp）备案信息查询
+
+    # 域名备案信息查询 API
+    icp_url = f"https://api.vvhan.com/api/icp?url={domain}"
+    # 查询 ICP 域名备案信息
+    icp_rep = req(icp_url, headers=random_useragent(), proxies=proxies)
+
+    try:
+        if icp_rep:
+            """incorrect demo:
+            {
+                "message": "请输入正确的域名",
+                "success": true
+            }
+            {
+                "message": "参数输入不完整",
+                "success": false
+            }
+            """
+            icp_rep_json = icp_rep.json()
+            # 接口调用成功，但参数异常
+            if not icp_rep_json['success']:
+                """incorrect demo:
+                    {
+                        "message": "请输入正确的域名",
+                        "success": true
+                    }
+                    {
+                        "message": "参数输入不完整",
+                        "success": false
+                    }
+                    """
+                # console.log(f"[red][EROR] 查询 {domain} 的 ICP 信息发生错误，错误信息：{icp_rep_json['message']}[/red]")
+                domain_error.append(domain)
+            # 接口调用成功，但未查询到数据
+            elif 'message' in icp_rep_json:
+                """incorrect demo:
+                {
+                    "message": "此域名未备案",
+                    "success": true
+                }
+                """
+                # 建议不打印 未查询到备案的信息，避免过多信息
+                # console.log(f"[blue][INFO] 查询 {domain} 的 ICP 备案未查询到，错误信息：{icp_rep_json['message']}[/blue]")
+                domain_error.append(domain)
+            # 查询到备案信息
+            elif 'info' in icp_rep_json:  # 存在备案信息
+                """correct demo:
+                {
+                    "domain": "baidu.com",
+                    "info": {
+                        "icp": "京 ICP 证 030173 号 -1",
+                        "name": "北京百度网讯科技有限公司",
+                        "nature": "企业",
+                        "time": "2022-06-19 23:13:26",
+                        "title": "百度"
+                    },
+                    "success": true
+                }
+                """
+                icp_info = icp_rep_json['info']
+                domain_info['标题'] = icp_info['title']
+                domain_info['备案类型'] = icp_info['nature']
+                domain_info['备案名称'] = icp_info['name']
+                domain_info['备案号'] = icp_info['icp']
+            # 未知错误
+            else:
+                # console.log(f"[red][EROR] 查询 {domain} 的 ICP 信息发生错误，请求 {icp_url} 错误信息：{icp_rep_json}[/red]")
+                domain_error.append(domain)
+    except JSONDecodeError:
+        # console.log(f"[red][EROR] 查询 {domain} 的备案信息 JSON 解析异常。[/red]")
+        domain_json_error.append(domain)
+    except Exception:
+        # console.log(f"[red][EROR] 查询 {domain} 的备案信息发生程序错误 [/red]")
+        domain_error.append(domain)
+
+    # 根据域名查询 whois 注册信息
+    try:
+        # edu 域名不支持查询 whois 接口
+        if "edu.cn" in domain:
+            domain_edu.append(domain)
+            return domain_info, domain_json_error, domain_error, domain_edu
+        else:
+            # 利用 python-whois 接口，查询 whois 域名注册信息，使用 flag 标志可以避免打印信息中断进度条打印
+            # "Error trying to connect to socket: closing socket"
+            # flags = 0
+            # flags = flags | whois.NICClient.WHOIS_QUICK
+            domain_whois = whois(domain)
+            if domain_whois:
+                domain_whois_dict = domain_whois
+                """correct demo:
+                {
+                    "domain_name": [
+                        "TAOBAO.COM",
+                        "taobao.com"
+                    ],
+                    "registrar": "Alibaba Cloud Computing (Beijing) Co., Ltd.",
+                    "whois_server": "grs-whois.hichina.com",
+                    "referral_url": null,
+                    "updated_date": "2022-05-18 16:35:45",
+                    "creation_date": "2003-04-21 03:50:05",
+                    "expiration_date": "2023-04-21 03:50:05",
+                    "name_servers": [
+                        "NS4.TAOBAO.COM",
+                        "NS5.TAOBAO.COM",
+                        "NS6.TAOBAO.COM",
+                        "NS7.TAOBAO.COM"
+                    ],
+                    "status": [
+                        "clientTransferProhibited https://icann.org/epp#clientTransferProhibited",
+                        "serverDeleteProhibited https://icann.org/epp#serverDeleteProhibited",
+                        "serverTransferProhibited https://icann.org/epp#serverTransferProhibited",
+                        "serverUpdateProhibited https://icann.org/epp#serverUpdateProhibited"
+                    ],
+                    "emails": "DomainAbuse@service.aliyun.com",
+                    "dnssec": "unsigned",
+                    "name": null,
+                    "org": null,
+                    "address": null,
+                    "city": null,
+                    "state": "zhe jiang",
+                    "zipcode": null,
+                    "country": "CN"
+                    }
+                """
+
+                """incorrect demo:
+                {
+                    "domain_name": null,
+                    "registrar": null,
+                    "creation_date": null,
+                    "expiration_date": null,
+                    "name_servers": null,
+                    "status": null,
+                    "emails": null,
+                    "dnssec": null,
+                    "name": null
+                }
+                """
+                # 判断是否有注册人信息
+                register_name = domain_whois_dict['name']
+                domain_info['注册人'] = register_name if register_name else "N/A"
+
+                # 判断是否有注册公司信息
+                if 'org' in domain_whois_dict:
+                    register_org = domain_whois_dict['org']
+                    domain_info['注册商'] = register_org if register_org else "N/A"
+                else:
+                    domain_info['注册商'] = "N/A"
+
+                register_mails = domain_whois_dict['emails']
+                if register_mails is not None:
+                    # 判断 注册邮箱返回值是否为列表，如果是列表，则转换为字符串，否则直接赋值
+                    if isinstance(register_mails, list):
+                        domain_info['注册邮箱'] = ",".join(register_mails)
+                    else:
+                        domain_info['注册邮箱'] = register_mails
+                else:
+                    domain_info['注册邮箱'] = "N/A"
+
+                # 判断是否有注册时间信息
+                register_time = domain_whois_dict['creation_date']
+                domain_info['注册时间'] = register_time.strftime('%Y-%m-%d %H:%M:%S') if register_time else "N/A"
+
+                # 判断是否有过期时间信息
+                expire_time = domain_whois_dict['expiration_date']
+                if expire_time is not None:
+                    # 判断 过期时间返回值是否为列表，如果是列表，则转换为字符串，否则直接赋值
+                    """demo:
+                    "expiration_date": [
+                        "2023-04-14 08:23:52",
+                        "2024-04-14 08:23:52"
+                      ]
+                    """
+                    if isinstance(expire_time, list):
+                        for time_ in expire_time:
+                            domain_info['到期时间'] = time_.strftime('%Y-%m-%d %H:%M:%S') + ","
+                    else:
+                        domain_info['到期时间'] = expire_time.strftime('%Y-%m-%d %H:%M:%S')
+
+                return domain_info, domain_json_error, domain_error, domain_edu
+            else:
+                # console.log(f"[red][EROR] 查询 {domain} 的 whois 注册信息发生错误，返回信息：{domain_whois}[/red]")
+                domain_error.append(domain)
+                return domain_info, domain_json_error, domain_error, domain_edu
+    except Exception:
+        # console.log(f"[red][EROR] 查询 {domain} 的 Whois 信息发生程序错误，错误信息:{traceback.format_exc()}[/red]")
+        domain_error.append(domain)
+        return domain_info, domain_json_error, domain_error, domain_edu
 
 
 def main(ip, config_path, proxies):
-    ThreatBook_result = ThreatBook(ip, config_path)
-    IP_reverse_url = []
-    IP_reverse1_result = IP_reverse1(ip, proxies)
-    if IP_reverse1_result != 0:
-        for i in IP_reverse1_result:
-            if len(i) > 0:
-                IP_reverse_url.append(i)
-    IP_reverse2_result = IP_reverse2(ip, proxies)
-    if IP_reverse2_result != 0:
-        for i in IP_reverse2_result:
-            if len(i) > 0:
-                IP_reverse_url.append(i)
-    fofa_result = Fofa(ip, config_path)
-    IP_survive_bool = fofa_result[0]
-    fofa_port = fofa_result[1]
-    fofa_url_result = fofa_result[2]
-    if fofa_port == 0:
-        fofa_port = ''
-    if fofa_url_result != 0:
-        for i in fofa_url_result:
-            if len(i) > 0:
-                IP_reverse_url.append(i)
-    table = Table()
-    table.add_column(' IP 是否存活', justify="center")
-    table.add_column(' IP 可能开放端口', justify="center")
-    table.add_row(IP_survive_bool, fofa_port)
-    console.log('[green][SUCC] %s 其他信息：' % ip)
-    console.print(table)
-    time.sleep(1)
-    if len(IP_reverse_url) > 0:
-        for ip2 in IP_reverse_url:
-            if Judge_ip(ip2):
-                IP_reverse_url.remove(ip2)
-        IP_reverse_url = list(set(IP_reverse_url))
-        IP_reverse_url.sort()
+    """
+    主函数，根据配置文件中的使能开关，执行不同的查询 API 函数
+    :param ip:              查询 IP
+    :param config_path:     配置文件路径
+    :param proxies:         代理
+    :return:                
+        threatbook_data         dict 类型，微步数据，用于后续写入 EXCEL 保存数据
+        nsfocus_data            dict 类型，绿盟数据，用于后续写入 EXCEL 保存数据
+        domain_info_data = {}   dict 类型，域名信息，用于后续写入 EXCEL 保存数据
+    """
+    # 用于保存 EXCEL 数据
 
-        def domain_info():
-            result = {}
-            result['ip'] = ip
-            result['是否为恶意IP'] = ThreatBook_result[0]
-            result['危害程度'] = ThreatBook_result[1]
-            result['威胁类型'] = ThreatBook_result[2]
-            result['标签'] = ThreatBook_result[3]
-            result['标签类型'] = ThreatBook_result[4]
-            result['场景'] = ThreatBook_result[5]
-            result['IP基本信息'] = ThreatBook_result[6]
-            result['IP地理位置'] = ThreatBook_result[7]
-            result['情报可信度'] = ThreatBook_result[8]
-            result['IP是否存活'] = IP_survive_bool
-            result['IP 可能开放端口'] = fofa_port
-            try:
-                url_icp = 'https://api.vvhan.com/api/icp?url=%s' % i
-                r_icp = req(url_icp, random_useragent(), proxies)
-                if 'Error' != r_icp:
-                    r_icp_json = r_icp.json()
-                    if 'message' not in r_icp_json:  # 存在备案信息
-                        result['域名'] = i.strip()
-                        result['标题'] = r_icp_json['info']['title'].strip()
-                        result['备案类型'] = r_icp_json['info']['nature'].strip()
-                        result['备案名称'] = r_icp_json['info']['name'].strip()
-                        result['备案号'] = r_icp_json['info']['icp'].strip()
-                    else:  # 不存在备案信息
-                        result['域名'] = i.strip()
-                        result['标题'] = 'N/A'
-                        result['备案类型'] = 'N/A'
-                        result['备案名称'] = 'N/A'
-                        result['备案号'] = 'N/A'
-            except Exception as e:
-                console.log('[red][EROR] 查询 %s 的备案信息发生错误，错误信息：%s' % (i.strip(), repr(e)))
-                result['域名'] = i.strip()
-                result['标题'] = 'N/A'
-                result['备案类型'] = 'N/A'
-                result['备案名称'] = 'N/A'
-                result['备案号'] = 'N/A'
+    threatbook_data = {}
+    nsfocus_data = {}
+    domain_info_data = {}
+    # 初始化 ConfigParser 对象，读取配置文件
+    # global cfg
+    cfg = ConfigParser()
+    cfg.read(config_path, encoding='utf-8-sig')
 
-            try:
-                if "edu.cn" in i.strip():
-                    result['注册人'] = 'N/A'
-                    result['注册邮箱'] = 'N/A'
-                    result['注册商'] = 'N/A'
-                    result['注册时间'] = 'N/A'
-                    result['到期时间'] = 'N/A'
-                else:
-                    r_whois = whois.whois(i.strip())
-                    result['注册人'] = r_whois["name"]
-                    if result['注册人'] == None:
-                        result['注册人'] = 'N/A'
+    # 设置全局参数
+    # fofa 查询域名列表
+    global fofa_domain_list
+    fofa_domain_list = {}
 
-                    result['注册邮箱'] = r_whois["emails"]
-                    if result['注册邮箱'] == None:
-                        result['注册邮箱'] = 'N/A'
+    # 读取微步情报查询使能开关
+    threabook_enable = cfg.get('Api Config', 'ThreatBook_enable').strip("'")
+    # 读取绿盟情报查询使能开关
+    nsfocus_enable = cfg.get('Api Config', 'Nsfocus_enable').strip("'")
 
-                    try:
-                        result['注册商'] = r_whois["org"]
-                    except:
-                        result['注册商'] = 'N/A'
+    # 判断是否查询威胁情报，若无则不打印表格
+    if threabook_enable or nsfocus_enable:
+        # 初始化表格，设置表格标题
+        table = Table(show_lines=True)
+        table.add_column('情报来源', justify="center")
+        table.add_column('是否为恶意 IP', justify="center")
+        table.add_column('危害程度', justify="center")
+        table.add_column('威胁类型', justify="center")
+        table.add_column('标签', justify="center")
+        table.add_column('标签类型', justify="center")
+        table.add_column('场景', justify="center")
+        table.add_column('IP 基本信息', justify="center")
+        table.add_column('IP 地理位置', justify="center")
+        table.add_column('情报可信度', justify="center")
 
-                    result['注册时间'] = r_whois["creation_date"]
-                    if result['注册时间'] == None:
-                        result['注册时间'] = 'N/A'
-                    else:
-                        result['注册时间'] = r_whois["creation_date"].strftime('%Y-%m-%d %H:%M:%S')
+        # 判断是否查询微步情报
+        if threabook_enable == "True":
+            # 获取微步 API_KEY 密钥列表
+            threatbook_api_key_chain = {k: v for k, v in cfg.items('ThreatBook')}.values()
+            # 获取微步情报数据
+            table, threatbook_result = threatbook(ip, threatbook_api_key_chain, table)
 
-                    result['到期时间'] = r_whois["expiration_date"]
-                    if result['到期时间'] == None:
-                        result['到期时间'] = 'N/A'
-                    else:
-                        result['到期时间'] = r_whois["expiration_date"].strftime('%Y-%m-%d %H:%M:%S')
-            except Exception as e:
-                console.log('[red][EROR] 查询 %s 的 Whois 信息发生错误，错误信息：%s' % (i.strip(), repr(e)))
-                result['注册人'] = 'N/A'
-                result['注册邮箱'] = 'N/A'
-                result['注册商'] = 'N/A'
-                result['注册时间'] = 'N/A'
-                result['到期时间'] = 'N/A'
-            pools.append(result)
-            pools_single.append(result)
+            # EXCEL 表格数据
+            threatbook_data['来源'] = threatbook_result[9]
+            threatbook_data['ip'] = ip
+            threatbook_data['是否为恶意 IP'] = threatbook_result[0]
+            threatbook_data['危害程度'] = threatbook_result[1]
+            threatbook_data['威胁类型'] = threatbook_result[2]
+            threatbook_data['标签'] = threatbook_result[3]
+            threatbook_data['标签类型'] = threatbook_result[4]
+            threatbook_data['场景'] = threatbook_result[5]
+            threatbook_data['IP 基本信息'] = threatbook_result[6]
+            threatbook_data['IP 地理位置'] = threatbook_result[7]
+            threatbook_data['情报可信度'] = threatbook_result[8]
 
-        pools_single = []
-        if len(IP_reverse_url) > 3:
-            console.log('[yellow][INFO] %s 反查到 %s 个 域名，正在查询域名相关信息，请稍等……' % (ip, len(IP_reverse_url)))
-            for i in track(IP_reverse_url, description='域名信息查询进度：'):
-                domain_info()
+        # 判断是否查询绿盟情报
+        if nsfocus_enable == "True":
+            # 获取微步 API_KEY 密钥列表
+            nsfocus_api_key = cfg.get('Nsfocus', 'Nsfocus_api').strip("'").strip()
+            # 获取绿盟情报数据
+            table, nsfocus_result = nsfocus(ip, nsfocus_api_key, table)
+
+            # EXCEL 表格数据
+            nsfocus_data['来源'] = nsfocus_result[9]
+            nsfocus_data['ip'] = ip
+            nsfocus_data['是否为恶意 IP'] = nsfocus_result[0]
+            nsfocus_data['危害程度'] = nsfocus_result[1]
+            nsfocus_data['威胁类型'] = nsfocus_result[2]
+            nsfocus_data['标签'] = nsfocus_result[3]
+            nsfocus_data['标签类型'] = nsfocus_result[4]
+            nsfocus_data['场景'] = nsfocus_result[5]
+            nsfocus_data['IP 基本信息'] = nsfocus_result[6]
+            nsfocus_data['IP 地理位置'] = nsfocus_result[7]
+            nsfocus_data['情报可信度'] = nsfocus_result[8]
+        # 打印表格
+        console.print(table)
+
+    # 读取 FOFA 情报查询使能开关
+    fofa_enable = cfg.get('Api Config', 'FOFA_enable').strip("'")
+    # 判断是否查询 FOFA 开放端口，若无则不打印表格
+    if fofa_enable == "True":
+        # 获取 FOFA 账号及 API
+        fofa_email = cfg.get('FOFA', 'Fofa_email').strip("'")
+        fofa_api = cfg.get('FOFA', 'Fofa_api').strip("'").strip()
+        fofa_size = cfg.get('FOFA', 'size').strip("'").strip()
+        # 获取 fofa 情报数据
+        fofa_port, fofa_domain_list = fofa(ip, fofa_email, fofa_api, fofa_size)
+
+        # 判断 fofa 查询 fofa 端口信息，如果为 空 则无需格式化 table 输出
+        if fofa_port:
+            # 打印 IP 开放端口信息
+            console.log(f"[green][SUCC] {ip} 开放端口信息，来源于 Fofa: [/green]")
+            table = Table(show_lines=True)
+            table.add_column(' IP 可能开放端口', justify="center")
+            table.add_row(fofa_port)
+            console.print(table)
+            time.sleep(1)
         else:
-            for i in IP_reverse_url:
-                domain_info()
-        table = Table()
+            console.log(f"[yellow][INFO] {ip} 开放端口信息信息未查询到，来源于 Fofa: [/yellow]")
+
+        # EXCEL 表格数据，确认功能是否开启。
+        if threabook_enable == "True":
+            threatbook_data['IP 可能开放端口'] = fofa_port
+        if nsfocus_enable == "True":
+            nsfocus_data['IP 可能开放端口'] = fofa_port
+
+    # 读取逆向解析域名使能开关
+    reverse_enable = cfg.get('Api Config', 'Revrse_IP_Lookup_enable').strip("'")
+    # 判断是否逆向解析域名，若无则不打印表格
+    if reverse_enable == "True":
+        if fofa_enable != "True":
+            console.log(f"[yellow][INFO] 逆向解析域名，建议同时打开 Fofa 使能开关，来查询更多域名相关信息！[/yellow]")
+            # 通过 api.webscan.cc. 获取逆向解析域名数据，函数返回值为 list 类型
+            ip_reverse_domain = reverse_ip_lookup(ip, proxies=proxies)
+
+        else:
+            # 通过 api.webscan.cc. 获取逆向解析域名数据，函数返回值为 list 类型
+            ip_reverse_domain = reverse_ip_lookup(ip, proxies=proxies)
+            # 通过 fofa 获取域名相关信息，函数返回值为 list 类型
+            if fofa_domain_list:
+                # 将 fofa 查询结果 list 类型转为 set 集合去重，合并至 ip_reverse_domain 中
+                ip_reverse_domain.extend(set(fofa_domain_list))
+        # 确保解析域名列表 不为空，否则将无法获取更多域名信息
+        if ip_reverse_domain:
+            # 数据过滤，去除 ip，去重
+            for i in ip_reverse_domain:
+                if is_ip(i):
+                    ip_reverse_domain.remove(i)
+            ip_reverse_domain = list(set(ip_reverse_domain))
+            # 排序，随意，只是 domain 输出排序好看
+            ip_reverse_domain.sort()
+
+        else:
+            # 未逆向解析到域名列表
+            console.log(f"[yellow][INFO] 未查询到 {ip} 的反查域名 [/yellow]")
+            return threatbook_data, nsfocus_data, domain_info_data
+        console.log(f"[yellow][INFO] {ip} 反查到 {len(ip_reverse_domain)} 个 域名，正在查询域名相关信息，请稍等……[/yellow]")
+
+        # 创建域名信息表格
+        table = Table(show_lines=True)
         table.add_column('域名', justify="center")
         table.add_column('标题', justify="center")
         table.add_column('备案类型', justify="center")
@@ -446,37 +652,69 @@ def main(ip, config_path, proxies):
         table.add_column('注册商', justify="center")
         table.add_column('注册时间', justify="center")
         table.add_column('到期时间', justify="center")
-        for i in pools_single:
-            table.add_row(i['域名'], i['标题'], i['备案类型'], i['备案名称'], i['备案号'], i['注册人'], i['注册邮箱'], i['注册商'],
-                          i['注册时间'], i['到期时间'])
-        console.log('[green][SUCC] %s 域名反查信息：' % ip)
-        console.print(table)
-    else:
-        console.log('[yellow][INFO] 未查询到 %s 的反查域名' % ip)
-        result = {}
-        result['ip'] = ip
-        result['是否为恶意IP'] = ThreatBook_result[0]
-        result['危害程度'] = ThreatBook_result[1]
-        result['威胁类型'] = ThreatBook_result[2]
-        result['标签'] = ThreatBook_result[3]
-        result['标签类型'] = ThreatBook_result[4]
-        result['场景'] = ThreatBook_result[5]
-        result['IP基本信息'] = ThreatBook_result[6]
-        result['IP地理位置'] = ThreatBook_result[7]
-        result['情报可信度'] = ThreatBook_result[8]
-        result['IP是否存活'] = IP_survive_bool
-        result['IP 可能开放端口'] = fofa_port
-        result['域名'] = 'N/A'
-        result['标题'] = 'N/A'
-        result['备案类型'] = 'N/A'
-        result['备案名称'] = 'N/A'
-        result['备案号'] = 'N/A'
-        result['注册人'] = 'N/A'
-        result['注册邮箱'] = 'N/A'
-        result['注册商'] = 'N/A'
-        result['注册时间'] = 'N/A'
-        result['到期时间'] = 'N/A'
-        pools.append(result)
+        # 表格样式初始化
+        domain_info_data['ip'] = []
+        domain_info_data['域名'] = []
+        domain_info_data['标题'] = []
+        domain_info_data['备案类型'] = []
+        domain_info_data['备案名称'] = []
+        domain_info_data['备案号'] = []
+        domain_info_data['注册人'] = []
+        domain_info_data['注册邮箱'] = []
+        domain_info_data['注册商'] = []
+        domain_info_data['注册商'] = []
+        domain_info_data['注册时间'] = []
+        domain_info_data['到期时间'] = []
+        # json 解析异常的域名
+        domain_json_error_list = []
+        # edu 的域名无法获取
+        domain_edu_list = []
+        # 未备案，程序错误，请求错误的域名
+        domain_error_list = []
+        try:
+            # 该函数仅用于下列判断循环调用
+            def query():
+                # 避免异常信息打印打断 进度条，因此将所有 console.log 注释掉，后续调试可以打开
+                domain_info_dict, domain_json_error_list, domain_error_list, domain_edu_list = domain_info_query(
+                    domain=domain.strip(),
+                    proxies=proxies)
+                # 将每次查询的结果添加至域名信息中
+                table.add_row(*(domain_info_dict.values()))
+                # 添加至表格中，类似于 data = {"name":["lily","ailcie"],"cost":[100,20]} 的样式
+                # 因此循环将 domain_info_dict 中的数据，添加进 domain_info_data 字典中
+                # 考虑到一个 IP 可能返回多个域名解析结果，因此需要将 域名信息 单独写入第二个 sheet
+                for i in domain_info_data.keys():
+                    if i == "ip":
+                        domain_info_data['ip'].append(ip)
+                    else:
+                        domain_info_data[i].append(domain_info_dict[i])
+            # 实际测试，域名个数大于 3 个，耗时较久，为了更好的交互体验，添加进度条
+            if len(ip_reverse_domain) > 3:
+                for domain in track(ip_reverse_domain, description='域名信息查询进度：'):
+                    query()
+            else:
+                # 同上，只是个数不超过 3 个时，无需进度条，可直接显示
+                for domain in ip_reverse_domain:
+                    query()
+            if domain_json_error_list:
+                console.log("[red][EROR] 以下域名的查询备案信息 JSON 解析异常。[/red]")
+                console.log(domain_json_error_list)
+            if domain_edu_list:
+                console.log(f"[yellow][INFO] 以下 edu 域名的 whois 注册信息请求错误，暂不支持中国教育域名查询 [/yellow]")
+                console.log(domain_edu_list)
+            if domain_error_list:
+                console.log("[red][EROR] 以下域名的请求 ICP 或 whois 信息异常。[/red]")
+                console.log(domain_error_list)
+        except Exception:
+            console.log(f"[red][EROR] 当前域名：{domain} 的信息查询存在异常，打印信息如下 [/red]")
+            console.log(traceback.format_exc())
+        # 打印表格
+        console.log(f"[green][SUCC] {ip} 域名反查信息：[/green]")
+        if domain_info_data:
+            console.print(table)
+
+    # 返回最终数据，用于写入 EXCEL 中
+    return threatbook_data, nsfocus_data, domain_info_data
 
 
 if __name__ == '__main__':
@@ -484,7 +722,7 @@ if __name__ == '__main__':
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
 |T|h|r|e|a|t| |I|n|t|e|l|l|i|g|e|n|c|e| |G|a|t|h|e|r|i|n|g|
 +-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+
-    团队：狼组安全团队   作者：TeamsSix    版本：0.5.4       
+    团队：狼组安全团队   作者：TeamsSix    版本：0.5.5       
     ''')
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', dest='config', help='指定配置文件，默认 ./config.ini')
@@ -494,55 +732,121 @@ if __name__ == '__main__':
     parser.add_argument('-o', dest='output', help='导出为 excel 表格，例如 output.xlsx')
     args = parser.parse_args()
 
+    # ip 计数
+    count = 1
+    # 全局变量，存放需要运行的代码的绝对路径
+    root_path = sys.path[0]
+    threatbook_result = {}
+    nsfocus_result = {}
+    domain_info_result = {}
+
+    # 配置文件路径参数
     if args.config:
         config_path = args.config
         if not os.path.exists(config_path):
-            console.log('[red][EROR] 未找到配置文件，请确认配置文件路径是否正确')
+            console.log('[red][EROR] 未找到配置文件，请确认配置文件路径是否正确 [/red]')
             sys.exit()
     else:
-        root_path = sys.path[0]
-        config_path = '%s/config.ini' % root_path
+        config_path = f"{root_path}/config.ini"
         init(config_path)
 
-    if args.output:
-        tig_output = args.output
-        if os.path.exists(tig_output):
-            console.log('[red][EROR] %s 文件已存在' % tig_output)
-            sys.exit()
-    else:
-        root_path = sys.path[0]
-        if not os.path.exists('%s/output' % root_path):
-            os.mkdir('%s/output' % root_path)
-        tig_output = '%s/output/tig_%s.xlsx' % (root_path, int(time.time()))
+    # 代理参数
     if args.proxy:
         proxies = {'http': args.proxy, 'https': args.proxy}
     else:
         proxies = {'http': None, 'https': None}
+
+    # 用于保存 excel 数据
     pools = []
-    if args.ip:
+
+    # 保存至 excel 中
+    def write_file_to_output(threatbook_result, nsfocus_result, domain_info_result):
+        # 初始化，用于控制后续写几张 sheet 表
+        ti_columns = []
+        domain_colums = []
+        # 判断最极端情况，所有数据均为空
+        if not threatbook_result and not nsfocus_result and not domain_info_result:
+            console.log(f"[red][EROR] 无任何数据需要保存，请确认查询结果！[/red]")
+        # 获取威胁情报 列名
+        elif threatbook_result and nsfocus_result:
+            ti_columns = threatbook_result.keys()
+        elif threatbook_result:
+            ti_columns = threatbook_result.keys()
+        elif nsfocus_result:
+            ti_columns = nsfocus_result.keys()
+
+        # 获取域名信息列名
+        if domain_info_result:
+            domain_colums = domain_info_result.keys()
+
+        # 保存文件名
+        if args.output:
+            output_filename = args.output
+            if ".xlsx" not in output_filename:
+                output_filename = f"{output_filename}.xlsx"
+            if os.path.exists(output_filename):
+                console.log(f"[red][EROR] {output_filename} 文件已存在 [/red]")
+                sys.exit()
+        else:
+
+            if not os.path.exists(f"{root_path}/output"):
+                os.mkdir(f"{root_path}/output")
+            current_time = time.strftime("%Y年%m月%d日_%H时%M分%S秒")
+            filename_suffix = f"_{count}个 IP.xlsx"
+            output_filename = f"{root_path}/output/tig_{current_time}{filename_suffix}"
+
+        try:
+            # 威胁情报数据转换成 excel DataFrame 数据
+            ti_df = DataFrame(pools, columns=ti_columns)
+            # 域名信息转换成 excel DataFrame 数据
+            domain_df = DataFrame(domain_info_result, columns=domain_colums)
+            # 以下方法可实现将两份数据分别写入不同的 sheet 中，否则会被覆盖
+            with pandas.ExcelWriter(output_filename) as writer:
+                if ti_columns:
+                    ti_df.to_excel(writer, sheet_name='威胁情报')
+                if domain_colums:
+                    domain_df.to_excel(writer, sheet_name='域名信息')
+
+            time.sleep(1)
+            console.log(f"[green][SUCC] 结果已保存至 {output_filename}[/green]")
+        except Exception:
+            console.log(f"[red][EROR] 保存数据发生程序错误，错误信息：{traceback.format_exc()}[/red]")
+
+    # 在实际使用中发现，单一 IP 需要保存信息的情况并不多，因此，设置 output 与 ip 参数同时设置时才保存结果
+    if args.ip and args.output:
         ip = args.ip
-        console.rule("[yellow]正在查询 %s 的情报信息" % ip, style="yellow")
+        console.rule(f"[yellow] 正在查询 {ip} 的情报信息 [/yellow]", style="yellow")
+        threatbook_result, nsfocus_result, domain_info_result = main(ip, config_path, proxies)
+        if threatbook_result:
+            pools.append(threatbook_result)
+        if nsfocus_result:
+            pools.append(nsfocus_result)
+        write_file_to_output(threatbook_result, nsfocus_result, domain_info_result)
+
+    # 否则，单一 IP 时，不保存结果，仅打印信息
+    elif args.ip:
+        ip = args.ip
+        console.rule(f"[yellow] 正在查询 {ip} 的情报信息 [/yellow]", style="yellow")
         main(ip, config_path, proxies)
+        # threatbook_result, nsfocus_result, domain_info_result = main(ip, config_path, proxies)
+
+    # ip 文件列表
     elif args.file:
         with open(args.file) as f:
-            f = f.readlines()
-        ip_list = []
-        for i in f:
-            i = i.strip()
-            if '.' in i:
-                ip_list.append(i)
-        num = 0
-        ip_len = len(ip_list)
-        for i in ip_list:
-            num = num + 1
-            console.rule("[yellow]正在查询 %s 的情报信息，剩余 %s 个IP" % (i, ip_len - num), style="yellow")
-            main(i, config_path, proxies)
-            print()
+            # content_list ip 字符串不携带空格
+            content_list = f.readlines()
+        # 文件对象转化为字符串，并从字符串中将 IP 正则匹配出来
+        ip_list = re.findall(r'(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', "".join(content_list))
+
+        count = len(ip_list)
+        for index, ip in enumerate(ip_list):
+            console.rule(f"[yellow][INFO] 正在查询 {ip} 的情报信息，剩余 {count - index} 个 IP[/yellow]", style="yellow")
+            threatbook_result, nsfocus_result, domain_info_result = main(ip, config_path, proxies)
+            if threatbook_result:
+                pools.append(threatbook_result)
+            if nsfocus_result:
+                pools.append(nsfocus_result)
+        write_file_to_output(threatbook_result, nsfocus_result, domain_info_result)
     else:
-        console.log('[yellow][INFO] 请输入待扫描的 IP 或 IP 列表文件')
+        console.log('[yellow][INFO] 请输入待扫描的 IP 或 IP 列表文件 [/yellow]')
         sys.exit()
-    df = DataFrame(pools, columns=['ip', 'IP是否存活', 'IP 可能开放端口', '是否为恶意IP', '危害程度', '威胁类型', '标签', '标签类型', '场景', 'IP基本信息',
-                                   'IP地理位置', '情报可信度', '域名', '注册人', '注册邮箱', '注册商', '注册时间', '到期时间'])
-    df.to_excel(tig_output)
-    time.sleep(1)
-    console.log('[green][SUCC] 结果已保存至 %s' % tig_output)

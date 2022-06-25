@@ -1,6 +1,5 @@
 requests
 pandas
 rich
-openpyxl
 PrettyTable
- 
+python-whois
