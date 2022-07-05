@@ -32,9 +32,7 @@ TIG `Threat Intelligence Gathering` ，即威胁情报收集。
 
 **项目地址：**
 
-**国外：[https://github.com/wgpsec/tig](https://github.com/wgpsec/tig)**
-
-**国内：[https://gitee.com/wgpsec/tig](https://gitee.com/wgpsec/tig)**
+[https://github.com/wgpsec/tig](https://github.com/wgpsec/tig)
 
 
 
@@ -58,21 +56,10 @@ TIG `Threat Intelligence Gathering` ，即威胁情报收集。
 
 需要 python3.6 或更高版本支持
 
-**国外**
-
 ```
 git clone https://github.com/wgpsec/tig.git
 cd  tig
 pip3 install -r requirements.txt
-python3 tig.py
-```
-
-**国内**
-
-```
-git clone https://gitee.com/wgpsec/tig.git
-cd tig
-pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 python3 tig.py
 ```
 
