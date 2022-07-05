@@ -3,4 +3,4 @@ pandas
 rich
 openpyxl
 PrettyTable
- 
+whois
