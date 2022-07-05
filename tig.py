@@ -79,7 +79,7 @@ def init(config_path):
 # 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/nodev4/vb4/myAPI（每天 50 次的免费额度）
 ThreatBook_api = '{ThreatBook_api}'
 
-# Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
+# Fofa ip 信息查询，查看 api 地址：https://fofa.info/personalData（付费，普通会员每次100条，高级会员每次10000条）
 Fofa_email = '{Fofa_email}'
 Fofa_api = '{Fofa_api}'
 '''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api)
@@ -100,7 +100,7 @@ Fofa_api = '{Fofa_api}'
 # 微步威胁情报查询，查看 api 地址：https://x.threatbook.cn/nodev4/vb4/myAPI（每天 50 次的免费额度）
 ThreatBook_api = '{ThreatBook_api}'
 
-# Fofa ip 信息查询，查看 api 地址：https://fofa.so/personalData（付费，普通会员每次100条，高级会员每次10000条）
+# Fofa ip 信息查询，查看 api 地址：https://fofa.info/personalData（付费，普通会员每次100条，高级会员每次10000条）
 Fofa_email = '{Fofa_email}'
 Fofa_api = '{Fofa_api}'
 '''.format(ThreatBook_api=ThreatBook_api, Fofa_email=Fofa_email, Fofa_api=Fofa_api)
