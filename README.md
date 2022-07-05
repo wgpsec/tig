@@ -111,7 +111,7 @@ tig -v
 
 查看自己微步 API  Key 的地址为：[https://x.threatbook.cn/nodev4/vb4/myAPI](https://x.threatbook.cn/nodev4/vb4/myAPI)，免费账户有每天 50 次的限额。
 
-查看自己 Fofa API Key 的地址为：[https://fofa.so/personalData](https://fofa.so/personalData)，普通会员每次免费前 100 条，高级会员每次免费前 10000 条。
+查看自己 Fofa API Key 的地址为：[https://fofa.info/personalData](https://fofa.info/personalData)，普通会员每次免费前 100 条，高级会员每次免费前 10000 条。
 
 如果之前使用过历史版本，程序会自动根据原来的配置文件生成当前的配置文件，无需手动更改。
 
