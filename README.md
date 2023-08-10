@@ -1,3 +1,5 @@
+# 此工具已于 2022 年 3 月 4 日停止维护，现该仓库已归档。
+
 <h1 align="center">TIG  威胁情报收集 🪓</h1>
 
 [![GitHub stars](https://img.shields.io/github/stars/wgpsec/tig)](https://github.com/wgpsec/tig) [![GitHub issues](https://img.shields.io/github/issues/wgpsec/tig)](https://github.com/wgpsec/tig/issues) [![GitHub release](https://img.shields.io/github/release/wgpsec/tig)](https://github.com/wgpsec/tig/releases) ![](https://img.shields.io/badge/python-%3E%3D3.6-yellow) [![](https://img.shields.io/badge/author-TeamsSix-blueviolet)](https://github.com/teamssix) [![](https://img.shields.io/badge/WgpSec-%E7%8B%BC%E7%BB%84%E5%AE%89%E5%85%A8%E5%9B%A2%E9%98%9F-blue)](https://github.com/wgpsec)
